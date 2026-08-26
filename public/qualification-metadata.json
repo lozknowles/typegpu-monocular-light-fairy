@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-08-26",
+  "distributionRepository": "https://github.com/lozknowles/typegpu-monocular-light-fairy",
+  "source": {
+    "repository": "https://github.com/software-mansion/TypeGPU",
+    "commit": "40dc5c915d9e869daf7c37e4c0c62904f442002d",
+    "examplePath": "apps/typegpu-docs/src/examples/image-processing/monocular-light-injection",
+    "license": "MIT",
+    "licenseSha256": "abfe140e29a001c90ded00cf8a8f418cf3f35cb6252c148c7dd4406fa07e2337"
+  },
+  "tooling": {
+    "node": "24.19.0",
+    "pnpm": "11.1.2",
+    "typegpu": "0.12.3",
+    "unplugin-typegpu": "0.12.2",
+    "vite": "8.0.16",
+    "typescriptAlias": "tsover@6.0.2",
+    "playwrightCore": "1.62.1",
+    "packageJsonSha256": "18c4a145068a1dcce85db1a611d32e16d19022c359e2f71fec7a8019f22208f7",
+    "pnpmLockSha256": "8e4cf0794152a8567f4c11263cad78f273981d880eb19fd320dcc2b9b2b396d6"
+  },
+  "modelRepository": {
+    "repository": "https://huggingface.co/reczkok/depthart-typegpu",
+    "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+    "declaredLicense": "Apache-2.0",
+    "licensingAmbiguity": "The converted-weight repository declares Apache-2.0 and supplies LICENSE and NOTICE. Its NOTICE reports that the upstream DepthART project repository lacks a LICENSE file or copyright notice and relies on Apache-2.0 metadata declared by the upstream model host."
+  },
+  "models": [
+    {
+      "file": "depthart-relative-s-448-balanced.depthart",
+      "precision": "mixed-fp16",
+      "requires": "shader-f16",
+      "bytes": 13662992,
+      "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+    },
+    {
+      "file": "depthart-relative-s-448-f32.depthart",
+      "precision": "fp32",
+      "requires": "none",
+      "bytes": 23994512,
+      "sha256": "adc5352f2fc83d1fd7e740ed32b8a0bd7862cef463a430d23d6071990e822aef"
+    }
+  ],
+  "demoImage": {
+    "sourcePath": "apps/typegpu-docs/public/assets/depthart/demo.jpg",
+    "bytes": 267846,
+    "sha256": "85ec4e4a9994c815a28b8349f2808f34af0d63f6ffb64f7628e9a559a49e52b4"
+  },
+  "outputSemantics": "Nonnegative affine-invariant relative disparity at 448 by 448; not metric depth and not a real-world distance measurement.",
+  "privacyBoundary": "All photograph and camera-frame processing remains in the browser. The preview does not upload or retain photographs."
+}

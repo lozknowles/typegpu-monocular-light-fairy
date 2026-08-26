@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en" data-qualification="pending">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Tailnet-only TypeGPU DepthART relative-disparity and monocular light-injection preview."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>TypeGPU Monocular Light Injection — isolated preview</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">Isolated TypeGPU qualification</p>
+        <h1>Monocular Light Injection</h1>
+        <p class="subtitle">
+          Local browser processing with relative disparity. This does not measure metric depth or
+          real-world distance.
+        </p>
+      </div>
+      <div class="trust-badges" aria-label="Privacy and access boundaries">
+        <span>Tailnet only</span>
+        <span>Local processing</span>
+        <span>No photo retention</span>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="stage-card" aria-label="DepthART preview">
+        <div class="stage">
+          <canvas aria-label="Relit image output"></canvas>
+          <video autoplay muted playsinline hidden></video>
+
+          <div class="status" data-tone="busy" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="status-message">Preparing WebGPU…</p>
+          </div>
+
+          <div class="chooser" hidden>
+            <div class="chooser-panel">
+              <p class="chooser-kicker">Choose input</p>
+              <h2>Start with a photograph or camera</h2>
+              <p class="chooser-copy">
+                Uploaded and camera frames stay in this browser tab. The recommended small model is
+                selected automatically as FP16 when supported, otherwise FP32.
+              </p>
+              <p class="chooser-heading">Source</p>
+              <div class="chooser-row source-row"></div>
+              <p class="chooser-heading">Model</p>
+              <div class="chooser-row model-row"></div>
+              <button class="start-button" type="button">Start local processing</button>
+              <p class="chooser-error" hidden></p>
+              <div class="chooser-footer">
+                <label class="cache-toggle"><input type="checkbox" /> cache model locally</label>
+                <button class="clear-cache" type="button" disabled>clear model cache</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="unsupported" hidden>
+            <img src="/demo.jpg" alt="TypeGPU demonstration photograph" />
+            <div>
+              <p class="chooser-kicker">Compatibility fallback</p>
+              <h2>WebGPU is unavailable</h2>
+              <p class="unsupported-message"></p>
+              <p>
+                Use a current Chrome, Edge, or another WebGPU-capable browser with hardware
+                acceleration enabled. The page must remain on trusted HTTPS for camera access.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="stage-hint">
+          Drag or tap the image to steer the fairy light. Its fluttering wings split the light into
+          animated colour lobes, cast projected wing silhouettes, and add local reflective glints.
+          Switch between camera, relative disparity, normals, and relit views in the controls.
+        </p>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel controls-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Workbench</p>
+              <h2>View and lighting</h2>
+            </div>
+            <button id="source-button" class="quiet-button" type="button">Change source</button>
+          </div>
+
+          <label class="control-field">
+            <span>View</span>
+            <select id="view-select">
+              <option value="0">Relit</option>
+              <option value="1">Camera</option>
+              <option value="2">Relative disparity</option>
+              <option value="3">Normals</option>
+            </select>
+          </label>
+
+          <label class="control-field">
+            <span>Camera</span>
+            <select id="camera-select">
+              <option value="front">Front</option>
+              <option value="back">Rear</option>
+            </select>
+          </label>
+
+          <label class="fairy-toggle">
+            <input id="fairy-light" type="checkbox" checked />
+            <span>
+              <strong>Flying fairy light</strong>
+              <small>Fluttering procedural wings with three animated light and shadow lobes</small>
+            </span>
+          </label>
+
+          <label class="control-field range-field">
+            <span>Intensity <output id="intensity-output">3.00</output></span>
+            <input id="intensity" type="range" min="0" max="3.5" step="0.05" value="3" />
+          </label>
+          <label class="control-field range-field">
+            <span>Ambient <output id="ambient-output">0.50</output></span>
+            <input id="ambient" type="range" min="0" max="1.2" step="0.05" value="0.5" />
+          </label>
+          <label class="control-field range-field">
+            <span>Relief <output id="relief-output">0.85</output></span>
+            <input id="relief" type="range" min="0" max="2.5" step="0.05" value="0.85" />
+          </label>
+          <label class="control-field range-field">
+            <span>Shadow <output id="shadow-output">0.70</output></span>
+            <input id="shadow" type="range" min="0" max="1" step="0.05" value="0.7" />
+          </label>
+          <label class="control-field range-field">
+            <span>Reflections <output id="reflection-output">0.55</output></span>
+            <input id="reflection" type="range" min="0" max="1.5" step="0.05" value="0.55" />
+          </label>
+          <label class="control-field range-field">
+            <span>Occlusion <output id="occlusion-output">0.55</output></span>
+            <input id="occlusion" type="range" min="0" max="1" step="0.05" value="0.55" />
+          </label>
+          <label class="control-field color-field">
+            <span>Light colour</span>
+            <input id="light-color" type="color" value="#ffb875" />
+          </label>
+        </section>
+
+        <section class="panel diagnostics-panel" aria-labelledby="diagnostics-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Live evidence</p>
+              <h2 id="diagnostics-heading">Diagnostics</h2>
+            </div>
+            <span id="qualification-badge" class="state-badge" data-state="pending">Pending</span>
+          </div>
+          <dl class="diagnostics-grid">
+            <dt>Browser</dt>
+            <dd id="diag-browser">Detecting…</dd>
+            <dt>GPU adapter</dt>
+            <dd id="diag-adapter">Detecting…</dd>
+            <dt>Secure context</dt>
+            <dd id="diag-secure-context">Detecting…</dd>
+            <dt>WebGPU</dt>
+            <dd id="diag-webgpu">Detecting…</dd>
+            <dt>shader-f16</dt>
+            <dd id="diag-f16">Detecting…</dd>
+            <dt>timestamp-query</dt>
+            <dd id="diag-timestamp">Detecting…</dd>
+            <dt>Selected model</dt>
+            <dd id="diag-model">Waiting…</dd>
+            <dt>Model revision</dt>
+            <dd id="diag-model-revision">913a7c13ddfb…</dd>
+            <dt>Model load + SHA-256</dt>
+            <dd id="diag-model-load">Waiting…</dd>
+            <dt>Pipeline compilation</dt>
+            <dd id="diag-pipeline">Waiting…</dd>
+            <dt>Cold inference</dt>
+            <dd id="diag-cold">Waiting…</dd>
+            <dt>Warmed inference</dt>
+            <dd id="diag-warm">Waiting…</dd>
+            <dt>Render rate</dt>
+            <dd id="diag-fps">Waiting…</dd>
+            <dt>Dropped frames</dt>
+            <dd id="diag-dropped">0</dd>
+            <dt>Timing source</dt>
+            <dd id="diag-timing">Waiting…</dd>
+          </dl>
+          <p class="diagnostics-note">
+            GPU timestamp queries, when exposed by the browser, are true device timestamps but may
+            be privacy-quantised. Otherwise inference is measured from submission to queue
+            completion with a wall clock. During camera use, FPS counts completed GPU pipeline
+            frames; dropped frames are camera inputs skipped while inference is busy. Foregrounding
+            the page resets both counters.
+          </p>
+        </section>
+
+        <section class="panel boundary-panel">
+          <p class="eyebrow">Interpretation boundary</p>
+          <h2>Relative disparity only</h2>
+          <p>
+            Brightness encodes affine-invariant relative disparity for the scene. It is not a
+            calibrated depth map and cannot support claims about metres, centimetres, or physical
+            distance without a separate, validated reconstruction pipeline.
+          </p>
+        </section>
+      </aside>
+    </main>
+
+    <input class="photo-input" type="file" accept="image/*" hidden />
+    <noscript>This preview requires JavaScript and a WebGPU-capable browser.</noscript>
+    <script type="module" src="/index.ts"></script>
+  </body>
+</html>

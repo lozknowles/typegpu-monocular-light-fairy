@@ -1,0 +1,38 @@
+{
+  "name": "typegpu-monocular-light-fairy",
+  "version": "0.1.0",
+  "description": "Unofficial, local-only TypeGPU relative-disparity relighting demo with live camera diagnostics and a procedural fairy light.",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lozknowles/typegpu-monocular-light-fairy.git"
+  },
+  "packageManager": "pnpm@11.1.2+sha512.415a1cc25974731e75455c1468371be74c5aa5fb7621b50d4056d222451609f11412f23fd602e6169f1e060466641f798597e1be961a10688836a67b16569499",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "vite build && node stage-models.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint -c oxlint.config.ts --max-warnings=0 --type-aware --report-unused-disable-directives .",
+    "models:fetch": "node scripts/fetch-models.mjs",
+    "preview:https": "node server.mjs",
+    "qualify:static": "node qualify.mjs",
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run build"
+  },
+  "dependencies": {
+    "typegpu": "0.12.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@webgpu/types": "0.1.71",
+    "eslint-plugin-typegpu": "0.12.0",
+    "oxlint": "1.57.0",
+    "oxlint-tsgolint": "0.17.4",
+    "playwright-core": "1.62.1",
+    "typescript": "npm:tsover@6.0.2",
+    "unplugin-typegpu": "0.12.2",
+    "vite": "8.0.16"
+  }
+}

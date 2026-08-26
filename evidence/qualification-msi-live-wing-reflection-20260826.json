@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-26T20:26:43.5450210Z",
+  "outcome": "runtime-passed-visual-glasses-check-pending",
+  "previewUrl": "private-tailnet-preview (redacted)",
+  "browser": {
+    "name": "Microsoft Edge",
+    "version": "151",
+    "platform": "Windows"
+  },
+  "adapter": {
+    "vendor": "intel",
+    "architecture": "xe-lpg",
+    "powerPreference": "high-performance"
+  },
+  "features": {
+    "webgpu": true,
+    "shaderF16": true,
+    "timestampQuery": true,
+    "timingSource": "gpu-timestamp-query"
+  },
+  "model": {
+    "bundle": "depthart-relative-s-448-balanced",
+    "precision": "mixed-fp16",
+    "bytes": 13662992,
+    "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+    "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+  },
+  "settings": {
+    "source": "front-camera",
+    "view": "relit",
+    "fairyEnabled": true,
+    "intensity": 3.0,
+    "ambient": 0.5,
+    "relief": 0.85,
+    "shadow": 0.85,
+    "reflection": 0.85,
+    "occlusion": 0.55
+  },
+  "timings": {
+    "modelLoadAndVerifyMs": 240.91,
+    "modelParseMs": 1.79,
+    "pipelineCompileMs": 1259.48,
+    "cold": {
+      "gpuComputeMs": 49.55,
+      "queueWallMs": 58.51
+    },
+    "warm": {
+      "samples": 4,
+      "gpuComputeMs": 48.43,
+      "queueWallMs": 58.21
+    }
+  },
+  "foregroundFrameInterval": {
+    "durationMs": 10079,
+    "completedPipelineFps": 14.7,
+    "skippedCameraInputs": 86,
+    "skippedInputsPerSecond": 8.6
+  },
+  "implementation": {
+    "projectedWingOcclusion": "analytic four-wing mask evaluated on a scene-relative caster plane",
+    "reflection": "screen-space local reflective-cue and specular approximation driven by three fairy light lobes",
+    "shaderSha256": "ff737559a8b670025a2a14c75f5b794b1f4f5797d54a2b3cc2f3d20a69abc9fd"
+  },
+  "privacy": {
+    "processing": "local-browser-only",
+    "cameraScreenshotCaptured": false,
+    "cameraFrameRetained": false
+  },
+  "limitations": [
+    "The glasses response is not semantic lens detection or optical ray tracing.",
+    "Visual confirmation of the glint on the user's actual glasses is pending user judgement.",
+    "All geometry is affine-invariant relative disparity, not metric depth."
+  ]
+}

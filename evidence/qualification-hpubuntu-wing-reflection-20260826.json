@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-26T20:25:02.538Z",
+  "outcome": "passed",
+  "previewUrl": "private-tailnet-preview (redacted)",
+  "qualification": {
+    "schemaVersion": 1,
+    "status": "complete",
+    "browser": {
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+      "brands": [
+        "Chromium 151",
+        "Not=A?Brand 99"
+      ],
+      "mobile": false,
+      "platform": "Linux"
+    },
+    "secureContext": true,
+    "webgpu": true,
+    "features": {
+      "shaderF16": true,
+      "timestampQuery": true,
+      "timestampQueryEnabled": true,
+      "timestampQueryNote": "Available — true GPU pass timestamps enabled"
+    },
+    "frames": {
+      "dropped": 1,
+      "fps": 59.21510379942104
+    },
+    "adapter": {
+      "architecture": "gen-9",
+      "description": "",
+      "device": "",
+      "powerPreference": "low-power",
+      "requestAttempts": 2,
+      "vendor": "intel"
+    },
+    "model": {
+      "bundle": "depthart-relative-s-448-balanced",
+      "bytes": 13662992,
+      "label": "small FP16 · 13 MB",
+      "precision": "mixed-fp16",
+      "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+      "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+    },
+    "timings": {
+      "modelLoadAndVerifyMs": 254.41999995708466,
+      "modelParseMs": 1.5499999523162842,
+      "pipelineCompileMs": 1118.1549999713898,
+      "cold": {
+        "wallMs": 232.73500001430511,
+        "gpuComputeMs": 157.523539,
+        "gpuFrameMs": 172.749468,
+        "gpuRenderMs": 15.216763
+      },
+      "warm": {
+        "samples": 6,
+        "wallMs": 172.74500000476837,
+        "gpuComputeMs": 149.697077,
+        "gpuFrameMs": 164.594261,
+        "gpuRenderMs": 15.16768
+      },
+      "source": "gpu-timestamp-query",
+      "gpuTimestampNote": "True GPU timestamp query; browser privacy quantisation may apply."
+    },
+    "capturedAt": "2026-08-26T20:24:56.847Z",
+    "outputs": {
+      "relit": {
+        "format": "rgba8unorm",
+        "height": 888,
+        "meanChannels": [
+          116.62117649744339,
+          117.01547155263371,
+          131.04340911857804,
+          255
+        ],
+        "nonBlackPixelRatio": 1,
+        "nonBlackPixels": 788544,
+        "sha256": "c341e5f8960d94ca89c66e7881abedeaf17eea1478035eb2eaa3afaba269ff82",
+        "totalPixels": 788544,
+        "width": 888
+      },
+      "camera": {
+        "format": "rgba8unorm",
+        "height": 888,
+        "meanChannels": [
+          96.61812910883857,
+          105.8816603765928,
+          129.28210600803507,
+          255
+        ],
+        "nonBlackPixelRatio": 0.9999226422368315,
+        "nonBlackPixels": 788483,
+        "sha256": "f31826683a6d8092eff3614a24e64a8e840c7dc5eb8225d4493d66656e351ce4",
+        "totalPixels": 788544,
+        "width": 888
+      },
+      "relativeDisparity": {
+        "format": "rgba8unorm",
+        "height": 888,
+        "meanChannels": [
+          96.57444606768931,
+          88.34847770067364,
+          160.3432275180586,
+          255
+        ],
+        "nonBlackPixelRatio": 1,
+        "nonBlackPixels": 788544,
+        "sha256": "0b272c1c86f2f0e27783fa63bbd4844b9e8739f9127893b7282996b79c2a8ad4",
+        "totalPixels": 788544,
+        "width": 888
+      },
+      "normals": {
+        "format": "rgba8unorm",
+        "height": 888,
+        "meanChannels": [
+          127.45995784635987,
+          109.88076632375619,
+          249.61768652098044,
+          255
+        ],
+        "nonBlackPixelRatio": 1,
+        "nonBlackPixels": 788544,
+        "sha256": "5c402580659f463ca269928798ddc97506b52846d886c2f9926e8020db7d6b56",
+        "totalPixels": 788544,
+        "width": 888
+      }
+    }
+  },
+  "browserVersion": "151.0.7922.108",
+  "consoleMessages": [
+    "warning: A valid external Instance reference no longer exists."
+  ],
+  "pageErrors": [],
+  "chromeGpuReport": ""
+}
