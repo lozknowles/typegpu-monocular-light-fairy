@@ -67,6 +67,7 @@ interface RelightingState {
   readonly fairyBank: number;
   readonly fairyPitch: number;
   readonly mirror: boolean;
+  readonly demoMirrorStudy: boolean;
   readonly lightColor: readonly [number, number, number];
   readonly exposure: number;
   readonly intensity: number;
@@ -116,6 +117,7 @@ export const defaultRelightingSettings: RelightingState = {
   fairyBank: 0,
   fairyPitch: 0,
   mirror: true,
+  demoMirrorStudy: false,
   lightColor: [1, 0.72, 0.46],
   exposure: 0.5,
   intensity: 3,
@@ -502,6 +504,7 @@ export class DepthRelightingRenderer {
       occlusion: this.#settings.occlusion,
       swapAxes: this.#swapAxes ? 1 : 0,
       mirror: this.#settings.mirror ? 1 : 0,
+      demoMirrorStudy: this.#settings.demoMirrorStudy ? 1 : 0,
       mode: this.#settings.mode,
       fairyEnabled: this.#settings.fairyEnabled ? 1 : 0,
     });

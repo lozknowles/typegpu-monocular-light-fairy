@@ -23,7 +23,8 @@ const CAMERA_FRAME_RATE = 60;
 const LIVE_TIMING_SAMPLE_COUNT = 5;
 const FAIRY_MAX_ROLL_DEGREES = 60;
 const FAIRY_MAX_PITCH_DEGREES = 39;
-const DEMO_IMAGE_URL = '/demo.jpg';
+const DEMO_IMAGE_URL =
+  '/demo.jpg?sha256=5715ffefb4f7056a8c15c00b849856116d488b2a8303b22d4886995bc9d8403e';
 const FACING_MODES = ['front', 'back'] as const;
 const VIEW_OUTPUT_LABELS = [
   'Relit image output',
@@ -107,6 +108,11 @@ interface QualificationRecord {
     pitchNormalized: number;
     rollNormalized: number;
   };
+  sceneOptics: {
+    demoMirrorStudy: boolean;
+    method: string;
+    limitation: string;
+  };
   outputs?: Record<'camera' | 'normals' | 'relativeDisparity' | 'relit', PixelDiagnostics>;
   error?: string;
 }
@@ -166,6 +172,11 @@ const qualification: QualificationRecord = {
     pitchNormalized: defaultRelightingSettings.fairyPitch,
     rollNormalized: defaultRelightingSettings.fairyBank,
   },
+  sceneOptics: {
+    demoMirrorStudy: false,
+    method: 'Generic relative-disparity relighting',
+    limitation: 'Screen-space approximation; no semantic mirror detection or optical ray tracing.',
+  },
 };
 window.__TYPEGPU_QUALIFICATION__ = qualification;
 
@@ -201,6 +212,27 @@ setDiagnostic(
   globalThis.isSecureContext ? 'Yes — camera APIs permitted' : 'No — camera APIs blocked',
 );
 setDiagnostic('diag-model-revision', MODEL_REVISION);
+
+function setDemoMirrorStudy(enabled: boolean): void {
+  qualification.sceneOptics = enabled
+    ? {
+        demoMirrorStudy: true,
+        method: 'Fixed bathroom-mirror mask with reflected fairy, glass warp, and offset shadow',
+        limitation: 'Artistic screen-space approximation; not physical refraction or ray tracing.',
+      }
+    : {
+        demoMirrorStudy: false,
+        method: 'Generic relative-disparity relighting',
+        limitation: 'No fixed scene mask is applied to uploads or camera frames.',
+      };
+  setDiagnostic(
+    'diag-scene-optics',
+    enabled
+      ? 'Bathroom mirror study · fixed mask · screen-space approximation'
+      : 'Generic relighting · no scene-specific mirror mask',
+  );
+  syncQualification();
+}
 
 function syncQualification(): void {
   window.__TYPEGPU_QUALIFICATION__ = qualification;
@@ -666,9 +698,10 @@ async function startSource(source: SourceChoice, uploadedImage?: ImageBitmap): P
   stopLiveBenchmark();
   camera.stop();
   if (source === SourceChoice.CAMERA) {
+    setDemoMirrorStudy(false);
     beginLiveBenchmark();
     setStatus('busy', 'Waiting for camera permission…');
-    renderer?.update({ mirror: camera.facingMode === 'user' });
+    renderer?.update({ mirror: camera.facingMode === 'user', demoMirrorStudy: false });
     await camera.start();
     renderer?.resetHistory();
     depthDirty = true;
@@ -680,7 +713,9 @@ async function startSource(source: SourceChoice, uploadedImage?: ImageBitmap): P
   setStatus('busy', 'Preparing the local photograph…');
   const bitmap =
     source === SourceChoice.UPLOAD && uploadedImage ? uploadedImage : await loadDemoImage();
-  renderer?.update({ mirror: false });
+  const demoMirrorStudy = source === SourceChoice.DEMO;
+  setDemoMirrorStudy(demoMirrorStudy);
+  renderer?.update({ mirror: false, demoMirrorStudy });
   renderer?.resetHistory();
   await benchmarkStaticImage(bitmap);
   startStaticLoop(bitmap);

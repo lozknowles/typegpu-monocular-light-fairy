@@ -1,0 +1,12 @@
+Bathroom demo photograph notice
+
+File: public/demo.jpg
+SHA-256: 5715ffefb4f7056a8c15c00b849856116d488b2a8303b22d4886995bc9d8403e
+
+The photograph was supplied by the repository owner, who confirmed ownership and directed its
+inclusion in this public repository.
+
+Copyright remains with the photograph owner. The MIT License in the repository's LICENSE file does
+not apply to this photograph. No standalone licence is granted to reuse, modify, republish, or
+redistribute the photograph separately from this repository. Contact the repository owner for
+permission before any such use.

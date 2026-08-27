@@ -79,6 +79,15 @@ const FAIRY_MAX_PITCH = 0.68;
 const FAIRY_BANK_CANT = 0.2;
 const FAIRY_POSE_DEPTH_GAIN = 2.2;
 
+const DEMO_MIRROR_LEFT = 0.635;
+const DEMO_MIRROR_TOP = 0.018;
+const DEMO_MIRROR_RIGHT = 0.998;
+const DEMO_MIRROR_BOTTOM = 0.725;
+const DEMO_MIRROR_EDGE = 0.012;
+const DEMO_MIRROR_GLASS_WARP = 0.0016;
+const DEMO_MIRROR_REFLECTION_GAIN = 0.72;
+const DEMO_MIRROR_SHADOW_GAIN = 0.34;
+
 const SHADOW_FAR_Z = -1.25;
 const SHADOW_STEPS = 32;
 const SHADOW_SPAN = 0.3;
@@ -114,6 +123,7 @@ export const RelightParams = d.struct({
   occlusion: d.f32,
   swapAxes: d.u32,
   mirror: d.u32,
+  demoMirrorStudy: d.u32,
   mode: d.u32,
   fairyEnabled: d.u32,
 });
@@ -293,6 +303,58 @@ function cameraUvAt(uv: d.v2f): d.v2f {
   const clamped = std.clamp(sourcePixel, d.vec2f(0), sourceSize - 1);
   const sourceUv = (clamped + 0.5) / sourceSize;
   return relightLayout.$.params.uvTransform * (sourceUv - d.vec2f(0.5)) + d.vec2f(0.5);
+}
+
+function demoMirrorMask(uv: d.v2f): number {
+  'use gpu';
+  const minimum = d.vec2f(DEMO_MIRROR_LEFT, DEMO_MIRROR_TOP);
+  const maximum = d.vec2f(DEMO_MIRROR_RIGHT, DEMO_MIRROR_BOTTOM);
+  const inset = std.min(
+    std.min(uv.x - minimum.x, maximum.x - uv.x),
+    std.min(uv.y - minimum.y, maximum.y - uv.y),
+  );
+  return std.smoothstep(d.f32(0), d.f32(DEMO_MIRROR_EDGE), inset);
+}
+
+function demoMirrorVirtualUv(uv: d.v2f): d.v2f {
+  'use gpu';
+  const minimum = d.vec2f(DEMO_MIRROR_LEFT, DEMO_MIRROR_TOP);
+  const size = d.vec2f(
+    DEMO_MIRROR_RIGHT - DEMO_MIRROR_LEFT,
+    DEMO_MIRROR_BOTTOM - DEMO_MIRROR_TOP,
+  );
+  const local = (uv - minimum) / size;
+  return d.vec2f(1 - local.x, local.y);
+}
+
+function demoMirrorReflectedLampUv(): d.v2f {
+  'use gpu';
+  const minimum = d.vec2f(DEMO_MIRROR_LEFT, DEMO_MIRROR_TOP);
+  const size = d.vec2f(
+    DEMO_MIRROR_RIGHT - DEMO_MIRROR_LEFT,
+    DEMO_MIRROR_BOTTOM - DEMO_MIRROR_TOP,
+  );
+  const lamp = fairyLampUv();
+  return minimum + d.vec2f(1 - lamp.x, lamp.y) * size;
+}
+
+/** A deliberately small screen-space glass displacement, not physical refraction. */
+function demoMirrorWarpedUv(uv: d.v2f): d.v2f {
+  'use gpu';
+  const delta = uv - demoMirrorReflectedLampUv();
+  const distance = std.max(std.length(delta), d.f32(0.0001));
+  const radial = delta / distance;
+  const wave =
+    std.sin(distance * 58 - relightLayout.$.params.fairyTime * 2.6) *
+    std.exp(0 - distance * 8);
+  const shimmer = d.vec2f(
+    std.sin(uv.y * 19 + relightLayout.$.params.fairyTime * 0.31),
+    std.cos(uv.x * 17 - relightLayout.$.params.fairyTime * 0.27),
+  );
+  const offset =
+    radial * (DEMO_MIRROR_GLASS_WARP * (0.55 + wave * 0.45)) +
+    shimmer * (DEMO_MIRROR_GLASS_WARP * 0.22);
+  return uv + offset * demoMirrorMask(uv);
 }
 
 function dither(uv: d.v2f): number {
@@ -833,6 +895,38 @@ function fairyGlow(uv: d.v2f, tint: d.v3f): d.v3f {
     exposure;
 }
 
+function demoMirrorFairyComposite(uv: d.v2f, lit: d.v3f, tint: d.v3f): d.v3f {
+  'use gpu';
+  const mask = demoMirrorMask(uv);
+  const virtualUv = demoMirrorVirtualUv(uv);
+  const reflected = fairySurface(virtualUv, tint, d.f32(0));
+  const shadowCaster = fairySurface(
+    virtualUv + d.vec2f(0.09, -0.04),
+    tint,
+    d.f32(0),
+  );
+  const presence = bulbPresence();
+  const reflectionStrength =
+    mask *
+    presence *
+    std.saturate(relightLayout.$.params.specular * DEMO_MIRROR_REFLECTION_GAIN);
+  const shadowStrength =
+    mask *
+    shadowCaster.w *
+    relightLayout.$.params.shadow *
+    DEMO_MIRROR_SHADOW_GAIN;
+  let result = d.vec3f(lit) * (1 - shadowStrength);
+  result = std.mix(
+    result,
+    reflected.xyz * (0.58 + fireflyPulse() * 0.18),
+    reflected.w * reflectionStrength,
+  );
+  result +=
+    fairyGlow(virtualUv, tint) *
+    (mask * presence * relightLayout.$.params.specular * 0.2);
+  return result;
+}
+
 function compress(value: number): number {
   'use gpu';
   return (value * (value / (WHITE_POINT * WHITE_POINT) + 1)) / (value + 1);
@@ -905,7 +999,26 @@ export const relightFragment = tgpu.fragmentFn({
   }
   const occlusion = std.mix(d.f32(1), surface.z, relightLayout.$.params.occlusion);
 
-  const albedo = std.pow(cameraColor, d.vec3f(GAMMA));
+  let sceneColor = d.vec3f(cameraColor);
+  if (
+    relightLayout.$.params.demoMirrorStudy !== 0 &&
+    relightLayout.$.params.fairyEnabled !== 0
+  ) {
+    const displacedMirrorColor = std.saturate(
+      std.textureSampleBaseClampToEdge(
+        relightFrameLayout.$.frame,
+        relightLayout.$.sampler,
+        cameraUvAt(demoMirrorWarpedUv(uv)),
+      ).rgb,
+    );
+    sceneColor = std.mix(
+      sceneColor,
+      displacedMirrorColor * d.vec3f(0.985, 1, 1.018),
+      demoMirrorMask(uv) * 0.32,
+    );
+  }
+
+  const albedo = std.pow(sceneColor, d.vec3f(GAMMA));
   const tint = d.vec3f(relightLayout.$.params.lightColor.rgb);
   let lit = albedo * AMBIENT_FILL * (relightLayout.$.params.exposure * occlusion);
   const presence = bulbPresence();
@@ -934,7 +1047,7 @@ export const relightFragment = tgpu.fragmentFn({
     lit += fairyReflection(
       position,
       normal,
-      cameraColor,
+      sceneColor,
       lightPosition,
       lampTint,
       FIREFLY_LIGHT_RADIUS,
@@ -943,6 +1056,9 @@ export const relightFragment = tgpu.fragmentFn({
     const fairy = fairySurface(uv, tint, surface.w);
     lit = std.mix(lit, fairy.xyz * presence, fairy.w * presence);
     lit += fairyGlow(uv, tint) * presence;
+    if (relightLayout.$.params.demoMirrorStudy !== 0) {
+      lit = demoMirrorFairyComposite(uv, lit, tint);
+    }
   } else {
     lit += directLight(
       position,

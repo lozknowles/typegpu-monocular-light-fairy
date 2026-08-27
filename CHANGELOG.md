@@ -7,6 +7,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Replaced the bundled fallback photograph with the user-supplied 568 × 380 bathroom scene and
+  recorded its exact byte count and SHA-256. The same SHA-256 versions the browser URL so an older
+  immutable demo-image cache cannot survive the replacement. The user confirmed ownership and
+  directed its publication; the photograph is excluded from the repository's MIT code licence.
+- Added a demo-only, centre-crop-aligned mask over the photographed wall mirror with a horizontally
+  reflected fairy/light, subtle glass-layer displacement, and an offset analytic shadow. The UI and
+  diagnostics label it as a scene-specific screen-space approximation; uploads and cameras do not
+  receive the mask.
 - Replaced the idle looping hover with wide autonomous swoops, climbs, dives, tangent orientation,
   and banked turns; manual tap/drag placement now pins the fairy until it is released.
 - Added bounded pseudo-3D roll and pitch projection. The body and wings now foreshorten and shear,
@@ -27,6 +35,9 @@ All notable changes to this project are documented here. The format follows
   flight resume on MSI without requesting camera access or retaining a camera image.
 - Passed hpubuntu and MSI static-demo roll-and-pitch checks with time-separated canvas hashes and
   live pose diagnostics; no camera permission or camera image was used.
+- Passed hpubuntu Intel Gen9 and MSI Intel Xe-LPG bathroom-mirror qualification with the pinned FP16
+  model, true GPU timestamps, four non-black output readbacks, and a real MSI Camera-versus-Relit
+  canvas comparison. No camera permission or camera image was used.
 - Reconfirmed the busy Quadro P5000 FP32 path as blocked by Vulkan memory pressure without stopping
   or reconfiguring any protected workload.
 

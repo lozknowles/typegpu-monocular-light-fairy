@@ -82,6 +82,12 @@ a separately calibrated reconstruction system.
 - A bright/neutral/detail cue and surface normal feed a single-source specular approximation. The
   Reflections control scales it. It can suggest a moving glint on glasses but does not detect lenses
   or trace an optical reflection.
+- The bundled bathroom image alone enables a fixed, centre-crop-aligned mask over the photographed
+  wall mirror. Inside that mask, the shader horizontally remaps the procedural fairy into a smaller
+  reflected sprite, adds a bounded offset silhouette, and displaces a second RGB sample by at most a
+  few thousandths of the canvas. This is a deliberately labelled screen-space glass study—not
+  semantic mirror detection, physical refraction, scene reconstruction, or ray tracing. Uploaded
+  photographs and camera frames never receive the fixed mask.
 
 ### Live-camera scheduling
 
@@ -101,7 +107,7 @@ queue-completion wall clock explicitly; it never presents that fallback as true 
 
 ## Privacy and security boundary
 
-- The browser fetches static JavaScript, the selected model, and the bundled public demo image.
+- The browser fetches static JavaScript, the selected model, and the bundled bathroom demo image.
 - Uploaded files become tab-local browser objects. Camera frames remain local media/GPU resources.
 - The application defines no upload endpoint and the server accepts only GET and HEAD.
 - The server applies CSP, cross-origin isolation, same-origin resource policy, a camera-only

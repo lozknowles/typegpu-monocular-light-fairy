@@ -43,9 +43,19 @@
     }
   ],
   "demoImage": {
-    "sourcePath": "apps/typegpu-docs/public/assets/depthart/demo.jpg",
-    "bytes": 267846,
-    "sha256": "85ec4e4a9994c815a28b8349f2808f34af0d63f6ffb64f7628e9a559a49e52b4"
+    "sourcePath": "user-owned 02.jpg",
+    "dimensions": [568, 380],
+    "bytes": 66624,
+    "sha256": "5715ffefb4f7056a8c15c00b849856116d488b2a8303b22d4886995bc9d8403e",
+    "processing": "Byte-identical copy; original file not modified.",
+    "embeddedMetadata": "No EXIF, XMP, or IPTC tags detected; JFIF with a 12-byte 8BIM profile.",
+    "rightsNote": "The user confirmed ownership and directed inclusion in the public repository. Copyright remains with the photograph owner; the MIT code licence does not apply and no standalone reuse licence is granted.",
+    "noticePath": "PHOTO_NOTICE.txt"
+  },
+  "demoMirrorStudy": {
+    "scope": "Fixed mask for the bundled bathroom image only; never applied to uploads or camera frames.",
+    "effects": ["reflected fairy and light", "subtle glass-layer displacement", "offset analytic shadow"],
+    "interpretation": "Artistic screen-space approximation, not semantic mirror detection, physical refraction, scene reconstruction, or optical ray tracing."
   },
   "outputSemantics": "Nonnegative affine-invariant relative disparity at 448 by 448; not metric depth and not a real-world distance measurement.",
   "privacyBoundary": "All photograph and camera-frame processing remains in the browser. The preview does not upload or retain photographs."

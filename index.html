@@ -62,7 +62,10 @@
           </div>
 
           <div class="unsupported" hidden>
-            <img src="/demo.jpg" alt="TypeGPU demonstration photograph" />
+            <img
+              src="/demo.jpg?sha256=5715ffefb4f7056a8c15c00b849856116d488b2a8303b22d4886995bc9d8403e"
+              alt="Bathroom scene with a large wall mirror"
+            />
             <div>
               <p class="chooser-kicker">Compatibility fallback</p>
               <h2>WebGPU is unavailable</h2>
@@ -76,9 +79,11 @@
         </div>
         <p class="stage-hint">
           The fairy now swoops, banks, climbs and dives across the image. Drag or tap to pin it;
-          tap it again to resume flight. It rolls into turns and pitches through depth changes, so a
-          compact firefly-style abdomen glow and restrained wing silhouette move in perspective.
-          Switch between camera, relative disparity, normals, and relit views in the controls.
+          tap it again to resume flight. The bundled bathroom fallback adds a fixed mask over its
+          large mirror for a reflected fairy and light, a subtle glass-layer warp, and an offset
+          shadow. These are artistic screen-space cues, not physical refraction or optical ray
+          tracing; uploaded and camera images do not inherit this scene-specific mask. Switch between
+          camera, relative disparity, normals, and relit views in the controls.
         </p>
       </section>
 
@@ -189,6 +194,8 @@
             <dd id="diag-timing">Waiting…</dd>
             <dt>Fairy pose</dt>
             <dd id="diag-fairy-pose">Roll 0° · pitch 0°</dd>
+            <dt>Scene optics</dt>
+            <dd id="diag-scene-optics">Generic relighting · no scene-specific mirror mask</dd>
           </dl>
           <p class="diagnostics-note">
             GPU timestamp queries, when exposed by the browser, are true device timestamps but may

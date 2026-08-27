@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-27T06:34:28Z",
+  "scope": "Bundled static bathroom photograph only; no camera permission or camera frame was used.",
+  "distributionBaseCommit": "792ed897a376f859bc0561c31fb1b71528e689e3",
+  "workingTreeCommitted": false,
+  "preview": {
+    "access": "Private tailnet HTTPS only; hostname redacted from committed evidence.",
+    "serverPid": 1377981,
+    "serverRestarted": false,
+    "tailscaleConfigurationChanged": false,
+    "rollback": "/fast/work/typegpu-depthart-20260826/preview-backups/bathroom-mirror-cache-20260827T0632Z/dist.before"
+  },
+  "photo": {
+    "sourceName": "02.jpg",
+    "dimensions": [568, 380],
+    "bytes": 66624,
+    "sha256": "5715ffefb4f7056a8c15c00b849856116d488b2a8303b22d4886995bc9d8403e",
+    "deployedCopy": "Byte-identical; original file not modified.",
+    "embeddedMetadata": "No EXIF, XMP, or IPTC tags detected; JFIF with a 12-byte 8BIM profile.",
+    "rights": "The user confirmed ownership and directed inclusion in the public repository. Copyright remains with the photograph owner; it is excluded from the MIT code licence and has no standalone reuse licence."
+  },
+  "implementation": {
+    "scope": "Fixed mask for the centre-cropped large wall mirror in the bundled image only.",
+    "effects": [
+      "horizontally remapped reflected fairy and abdomen light",
+      "bounded glass-layer RGB displacement",
+      "offset fluttering silhouette controlled by Shadow"
+    ],
+    "limitation": "Artistic screen-space approximation; not semantic mirror detection, physical refraction, scene reconstruction, or optical ray tracing.",
+    "uploadsAndCameraMasked": false,
+    "cameraViewAltered": false,
+    "assetCacheKey": "The image SHA-256 is present in both JavaScript and fallback image URLs."
+  },
+  "build": {
+    "indexHtmlSha256": "e2a560dffa73c3c55971effd4f920ab5c29ea50541313d5d6da431972ebf8b4e",
+    "javascript": "index-DWqfy6Xz.js",
+    "javascriptSha256": "ebea697380961046868b1d0a84f96bae530ac3543ef54480a247891d49f2d615",
+    "css": "index-CD16JY9F.css",
+    "cssSha256": "d8a88eca729154a3b55eed03e99f403eb3cc859f4d2d1eea5f65a35898d40415",
+    "packageJsonSha256": "18c4a145068a1dcce85db1a611d32e16d19022c359e2f71fec7a8019f22208f7",
+    "pnpmLockSha256": "8e4cf0794152a8567f4c11263cad78f273981d880eb19fd320dcc2b9b2b396d6"
+  },
+  "runs": {
+    "hpubuntuIntelGen9": {
+      "outcome": "passed",
+      "browser": "Headless Chromium 151.0.7922.108 on Linux",
+      "adapter": "Intel Gen9 low-power",
+      "shaderF16": true,
+      "timestampQuery": true,
+      "model": "depthart-relative-s-448-balanced.depthart",
+      "modelBytes": 13662992,
+      "modelSha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c",
+      "modelLoadAndVerifyMs": 246.825,
+      "pipelineCompileMs": 899.845,
+      "cold": {
+        "wallMs": 225.385,
+        "gpuComputeMs": 156.408723,
+        "gpuFrameMs": 173.890366,
+        "gpuRenderMs": 17.472477
+      },
+      "warmMedianOfSix": {
+        "wallMs": 169.385,
+        "gpuComputeMs": 146.72354,
+        "gpuFrameMs": 164.473346,
+        "gpuRenderMs": 17.512726
+      },
+      "renderFps": 59.9988,
+      "droppedFrames": 1,
+      "outputPixelReadbacks": {
+        "relitSha256": "7e8778df9462cdff889b21b5ff2e0a767a65e34e2cfb3a9a8ee3ff3cfdedf1f1",
+        "cameraSha256": "e67283896bd9f66a0c8682f841aa873c636690b7bfb33df390894302294865ea",
+        "relativeDisparitySha256": "73eb6fb9d3b6325c65e5ee9a209c016843f3b82c7d368042d50aaf40814ab7d9",
+        "normalsSha256": "66fea742d6200077060ed02d20a8235a8121680c84d0dd0dac54346ad9ef5dcf"
+      }
+    },
+    "msiIntelXeLpg": {
+      "outcome": "passed",
+      "browser": "Google Chrome 151 on Windows",
+      "adapter": "Intel Xe-LPG low-power",
+      "shaderF16": true,
+      "timestampQuery": true,
+      "model": "depthart-relative-s-448-balanced.depthart",
+      "modelBytes": 13662992,
+      "modelSha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c",
+      "modelLoadAndVerifyMs": 41.58,
+      "pipelineCompileMs": 499.77,
+      "cold": {
+        "wallMs": 88.955,
+        "gpuComputeMs": 56.68864,
+        "gpuFrameMs": 59.047936,
+        "gpuRenderMs": 2.29376
+      },
+      "warmMedianOfSix": {
+        "wallMs": 72.065,
+        "gpuComputeMs": 56.426496,
+        "gpuFrameMs": 59.047936,
+        "gpuRenderMs": 2.686976
+      },
+      "renderFps": 60.0143,
+      "droppedFrames": 0,
+      "outputPixelReadbacks": {
+        "relitSha256": "20a8805a31047b18459176c135e65fb10acc1a71c10636c459ed892c6b3f36c9",
+        "cameraSha256": "fd41fa232b20b08b94ed3b5d8046e4ce6c804966dae22b9455382e854fea4bb5",
+        "relativeDisparitySha256": "1239fc649b7ce41d8871a3ca65f5783336b7033834f39eebd72a403cd32319fd",
+        "normalsSha256": "6fb6e09440bf29d573b2796beb133a31efe4abe333cff5de183f0dc6d3f0a397"
+      }
+    }
+  },
+  "visualAcceptance": {
+    "browser": "MSI real in-app browser canvas, not a headless full-page screenshot",
+    "cameraView": "Confirmed byte-identical bathroom centre crop with no synthetic effects.",
+    "relitView": "Confirmed the main fairy plus a smaller horizontally reflected moving fairy/light inside the photographed mirror; the dim offset silhouette remains bounded to the mirror glass.",
+    "retention": "No live camera image was requested, captured, or retained."
+  },
+  "protectedWorkloads": {
+    "ports8080And8081": "unchanged",
+    "llamaServerPids": [3778036, 3778037],
+    "otherGpuPid": 3778038,
+    "processStoppedOrRestarted": false
+  }
+}

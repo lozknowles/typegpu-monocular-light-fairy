@@ -15,6 +15,10 @@ isolated qualification workspace.
 - `qualification-fairy-rotation-20260827.json` records hpubuntu and MSI static-demo evidence for the
   bounded roll-and-pitch projection, pose ranges, time-separated canvas hashes, GPU timings, and the
   explicit no-camera boundary.
+- `qualification-bathroom-mirror-20260827.json` records the byte-identical bathroom fallback,
+  centre-crop-aligned mirror mask, cache-versioned image URL, hpubuntu and MSI FP16 timings, four-view
+  pixel hashes, real MSI canvas comparison, owner-confirmed photograph rights boundary, and explicit
+  no-camera boundary.
 
 The NVIDIA Quadro P5000 result remains blocked because protected workloads occupied GPU memory. No
 process was stopped to obtain a benchmark. The full operational evidence remains outside this source

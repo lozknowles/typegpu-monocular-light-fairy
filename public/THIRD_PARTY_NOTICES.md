@@ -16,3 +16,8 @@ the upstream model host. This qualification records that ambiguity; it does not 
 
 The model emits affine-invariant relative disparity. It is not a metric-depth model and does not
 measure physical distance.
+
+The bundled bathroom photograph (`public/demo.jpg`) was supplied by the user, who confirmed
+ownership and directed its inclusion in this public repository. Copyright remains with the
+photograph owner. The repository's MIT code licence does not apply to this photograph, and no
+standalone reuse licence is granted. See `PHOTO_NOTICE.txt`.
