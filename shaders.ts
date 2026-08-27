@@ -63,19 +63,21 @@ const BULB_SOURCE_SOFTNESS = 0.08;
 const BULB_SAMPLE_SPREAD = 0.6;
 const BULB_SAMPLES = RING_OFFSETS.length ** 2;
 
-const FAIRY_WING_SPEED = 13;
-const FAIRY_WING_LIGHT_OFFSET = 0.055;
-const FAIRY_WING_LIGHT_RADIUS = 0.72;
-const FAIRY_WING_SHADOW_STEPS = 10;
-const FAIRY_WING_SHADOW_GAIN = 2.1;
+const FAIRY_WING_SPEED = 16;
 const FAIRY_WING_CASTER_PLANE_OFFSET = 0.14;
-const FAIRY_WING_CASTER_STRENGTH = 1.25;
-const FAIRY_BODY_EMISSION = 3.2;
-const FAIRY_WING_EMISSION = 1.7;
-const FAIRY_GLOW = 0.72;
-const FAIRY_TRAIL_GLOW = 0.3;
+const FAIRY_WING_CASTER_STRENGTH = 0.28;
+const FAIRY_BODY_SURFACE = 1.05;
+const FAIRY_WING_SURFACE = 0.46;
+const FIREFLY_LAMP_EMISSION = 8.4;
+const FIREFLY_GLOW = 1.15;
+const FIREFLY_TRAIL_GLOW = 0.24;
+const FIREFLY_LIGHT_RADIUS = 0.64;
 const FAIRY_REFLECTION_POWER = 18;
 const FAIRY_REFLECTION_GAIN = 1.1;
+const FAIRY_MAX_ROLL = 1.05;
+const FAIRY_MAX_PITCH = 0.68;
+const FAIRY_BANK_CANT = 0.2;
+const FAIRY_POSE_DEPTH_GAIN = 2.2;
 
 const SHADOW_FAR_Z = -1.25;
 const SHADOW_STEPS = 32;
@@ -101,6 +103,9 @@ export const RelightParams = d.struct({
   lightPosition: d.vec2f,
   lightZ: d.f32,
   fairyTime: d.f32,
+  fairyHeading: d.f32,
+  fairyBank: d.f32,
+  fairyPitch: d.f32,
   exposure: d.f32,
   intensity: d.f32,
   relief: d.f32,
@@ -330,42 +335,6 @@ function shadowFactor(
   return 1 - std.saturate((occlusion / d.f32(SHADOW_STEPS)) * SHADOW_GAIN);
 }
 
-function fairyShadowFactor(
-  origin: d.v3f,
-  lightDirection: d.v3f,
-  reach: number,
-  jitter: number,
-  lightZ: number,
-): number {
-  'use gpu';
-  const stride = reach / d.f32(FAIRY_WING_SHADOW_STEPS);
-  const baselineTravel = reach * (SHADOW_BASELINE / SHADOW_SPAN);
-  const trailProbe = origin - lightDirection * baselineTravel;
-  const receiverRise = std.max(
-    origin.z - shadowZ(depthAt(trailProbe.xy + d.vec2f(0.5))) - baselineTravel * lightDirection.z,
-    d.f32(0),
-  );
-  const risePerTravel = receiverRise / baselineTravel;
-
-  let occlusion = d.f32(0);
-  for (const step of std.range(FAIRY_WING_SHADOW_STEPS)) {
-    const travel = (d.f32(step) + jitter) * stride;
-    const probe = origin + lightDirection * travel;
-    const sampleZ = shadowZ(depthAt(probe.xy + d.vec2f(0.5)));
-    const difference = sampleZ - probe.z;
-    const bias = SHADOW_BIAS + travel * (SHADOW_SLOPE_BIAS + risePerTravel);
-    const thickness = SHADOW_THICKNESS * (1 + (travel / SHADOW_SPAN) * SHADOW_THICKNESS_GROWTH);
-    if (difference > bias && difference < thickness) {
-      const behindLight = 1 - std.saturate((sampleZ - lightZ) / SHADOW_FRONT_FADE);
-      occlusion += std.saturate((difference - bias) / SHADOW_SOFTNESS) * behindLight;
-    }
-  }
-  return 1 -
-    std.saturate(
-      (occlusion / d.f32(FAIRY_WING_SHADOW_STEPS)) * FAIRY_WING_SHADOW_GAIN,
-    );
-}
-
 function depthRamp(value: number): d.v3f {
   'use gpu';
   const cold = d.vec3f(0.03, 0.02, 0.12);
@@ -389,14 +358,12 @@ function bulbRadius(): number {
   );
 }
 
-function bulbExposure(radius: number): number {
+function bulbExposure(radius: number, center: d.v2f): number {
   'use gpu';
   let open = d.f32(0);
   for (const stepY of tgpu.unroll(RING_OFFSETS)) {
     for (const stepX of tgpu.unroll(RING_OFFSETS)) {
-      const probe =
-        relightLayout.$.params.lightPosition +
-        d.vec2f(stepX, stepY) * (radius * BULB_SAMPLE_SPREAD);
+      const probe = center + d.vec2f(stepX, stepY) * (radius * BULB_SAMPLE_SPREAD);
       open += std.smoothstep(
         d.f32(0),
         BULB_SOURCE_SOFTNESS,
@@ -428,7 +395,9 @@ function bulbGlow(uv: d.v2f, tint: d.v3f): d.v3f {
   const radii = std.length(uv - relightLayout.$.params.lightPosition) / radius;
   const halo = std.exp(0 - radii / BULB_HALO_SPAN);
   const veil = std.exp(0 - radii / BULB_VEIL_SPAN);
-  return tint * ((halo * BULB_HALO + veil * BULB_VEIL) * bulbExposure(radius));
+  return tint *
+    ((halo * BULB_HALO + veil * BULB_VEIL) *
+      bulbExposure(radius, relightLayout.$.params.lightPosition));
 }
 
 function bulbPresence(): number {
@@ -436,30 +405,140 @@ function bulbPresence(): number {
   return std.saturate(relightLayout.$.params.intensity / BULB_ONSET);
 }
 
-function fairyWingPosition(side: number): d.v3f {
+function fairyForward(): d.v2f {
   'use gpu';
-  const beat = std.sin(relightLayout.$.params.fairyTime * FAIRY_WING_SPEED);
-  const spread = FAIRY_WING_LIGHT_OFFSET * (0.72 + std.abs(beat) * 0.42);
-  const lift = 0.012 * beat;
-  return d.vec3f(
-    relightLayout.$.params.lightPosition - d.vec2f(0.5) + d.vec2f(side * spread, lift),
-    relightLayout.$.params.lightZ + 0.018 + std.abs(beat) * 0.018,
+  const displayHeading =
+    relightLayout.$.params.fairyHeading +
+    relightLayout.$.params.fairyBank * FAIRY_BANK_CANT;
+  return d.vec2f(
+    std.cos(displayHeading),
+    std.sin(displayHeading),
+  );
+}
+
+/** Projects the camera-facing local fairy plane after longitudinal roll and lateral pitch. */
+function fairyProjectedOffset(localOffset: d.v2f): d.v2f {
+  'use gpu';
+  const roll = relightLayout.$.params.fairyBank * FAIRY_MAX_ROLL;
+  const pitch = relightLayout.$.params.fairyPitch * FAIRY_MAX_PITCH;
+  const sinRoll = std.sin(roll);
+  const cosRoll = std.max(std.cos(roll), d.f32(0.42));
+  const sinPitch = std.sin(pitch);
+  const cosPitch = std.max(std.cos(pitch), d.f32(0.56));
+  return d.vec2f(
+    localOffset.x * cosRoll,
+    localOffset.y * cosPitch + localOffset.x * sinRoll * sinPitch,
+  );
+}
+
+function fairyUnprojectedOffset(projectedOffset: d.v2f): d.v2f {
+  'use gpu';
+  const roll = relightLayout.$.params.fairyBank * FAIRY_MAX_ROLL;
+  const pitch = relightLayout.$.params.fairyPitch * FAIRY_MAX_PITCH;
+  const sinRoll = std.sin(roll);
+  const cosRoll = std.max(std.cos(roll), d.f32(0.42));
+  const sinPitch = std.sin(pitch);
+  const cosPitch = std.max(std.cos(pitch), d.f32(0.56));
+  const localX = projectedOffset.x / cosRoll;
+  return d.vec2f(
+    localX,
+    (projectedOffset.y - localX * sinRoll * sinPitch) / cosPitch,
+  );
+}
+
+function fairyLocalDepth(localUv: d.v2f): number {
+  'use gpu';
+  const localOffset = localUv - relightLayout.$.params.lightPosition;
+  const roll = relightLayout.$.params.fairyBank * FAIRY_MAX_ROLL;
+  const pitch = relightLayout.$.params.fairyPitch * FAIRY_MAX_PITCH;
+  return (
+    (localOffset.y * std.sin(pitch) -
+      localOffset.x * std.sin(roll) * std.cos(pitch)) *
+    FAIRY_POSE_DEPTH_GAIN
+  );
+}
+
+function fairyProjectedUv(localUv: d.v2f): d.v2f {
+  'use gpu';
+  const center = relightLayout.$.params.lightPosition;
+  const forward = fairyForward();
+  const right = d.vec2f(0 - forward.y, forward.x);
+  const down = d.vec2f(0) - forward;
+  const projected = fairyProjectedOffset(localUv - center);
+  return center + right * projected.x + down * projected.y;
+}
+
+function fairyLocalUv(uv: d.v2f): d.v2f {
+  'use gpu';
+  const center = relightLayout.$.params.lightPosition;
+  const forward = fairyForward();
+  const right = d.vec2f(0 - forward.y, forward.x);
+  const down = d.vec2f(0) - forward;
+  const offset = uv - center;
+  return center +
+    fairyUnprojectedOffset(d.vec2f(std.dot(offset, right), std.dot(offset, down)));
+}
+
+function fairyLampUv(): d.v2f {
+  'use gpu';
+  const radius = bulbRadius() * 1.15;
+  return fairyProjectedUv(
+    relightLayout.$.params.lightPosition + d.vec2f(0, radius * 0.22),
+  );
+}
+
+function fairyLampZ(): number {
+  'use gpu';
+  const radius = bulbRadius() * 1.15;
+  return (
+    relightLayout.$.params.lightZ +
+    fairyLocalDepth(relightLayout.$.params.lightPosition + d.vec2f(0, radius * 0.22))
+  );
+}
+
+function fairyWingBeat(): number {
+  'use gpu';
+  const time = relightLayout.$.params.fairyTime;
+  const flutter = std.sin(time * FAIRY_WING_SPEED);
+  const glideCycle = 0.5 + std.sin(time * 0.47) * 0.5;
+  const glide = std.smoothstep(d.f32(0.72), d.f32(0.94), glideCycle);
+  return std.mix(flutter, d.f32(0.82), glide * 0.78);
+}
+
+function fireflyPulse(): number {
+  'use gpu';
+  const time = relightLayout.$.params.fairyTime;
+  const breath = 0.5 + std.sin(time * 2.05 + std.sin(time * 0.63) * 0.45) * 0.5;
+  const flicker = 0.5 + std.sin(time * 5.7) * 0.5;
+  return (
+    0.76 + std.smoothstep(d.f32(0.18), d.f32(0.88), breath) * 0.18 + flicker * 0.06
   );
 }
 
 function fairyProjectedWingShadow(position: d.v3f, lightPosition: d.v3f): number {
   'use gpu';
-  const planeZ = lightPosition.z - FAIRY_WING_CASTER_PLANE_OFFSET;
-  const travel = std.clamp(
-    (planeZ - position.z) / std.max(lightPosition.z - position.z, d.f32(0.0001)),
+  const basePlaneZ = relightLayout.$.params.lightZ - FAIRY_WING_CASTER_PLANE_OFFSET;
+  const initialTravel = std.clamp(
+    (basePlaneZ - position.z) / std.max(lightPosition.z - position.z, d.f32(0.0001)),
     d.f32(0),
     d.f32(1),
   );
-  const probe =
-    position.xy + (lightPosition.xy - position.xy) * travel + d.vec2f(0.5);
+  const initialProbe = fairyLocalUv(
+    position.xy + (lightPosition.xy - position.xy) * initialTravel + d.vec2f(0.5),
+  );
+  const posedPlaneZ = basePlaneZ + fairyLocalDepth(initialProbe);
+  const posedTravel = std.clamp(
+    (posedPlaneZ - position.z) / std.max(lightPosition.z - position.z, d.f32(0.0001)),
+    d.f32(0),
+    d.f32(1),
+  );
+  const probe = fairyLocalUv(
+    position.xy + (lightPosition.xy - position.xy) * posedTravel + d.vec2f(0.5),
+  );
   const center = relightLayout.$.params.lightPosition;
-  const radius = BULB_WORLD_RADIUS * 1.15;
-  const beat = std.sin(relightLayout.$.params.fairyTime * FAIRY_WING_SPEED);
+  const radius = bulbRadius() * 1.15;
+  const beat = fairyWingBeat();
+  const bank = relightLayout.$.params.fairyBank;
   const wingOpen = 0.34 + std.abs(beat) * 0.66;
   const upperSpread = radius * (0.38 + wingOpen * 0.42);
   const lowerSpread = radius * (0.3 + wingOpen * 0.34);
@@ -473,12 +552,29 @@ function fairyProjectedWingShadow(position: d.v3f, lightPosition: d.v3f): number
     radius * (0.16 + wingOpen * 0.36),
     radius * (0.31 - wingOpen * 0.07),
   );
-  return std.saturate(
-    ellipseMask(probe, d.vec2f(center.x - upperSpread, upperY), upperRadii) +
-      ellipseMask(probe, d.vec2f(center.x + upperSpread, upperY), upperRadii) +
-      ellipseMask(probe, d.vec2f(center.x - lowerSpread, lowerY), lowerRadii) +
-      ellipseMask(probe, d.vec2f(center.x + lowerSpread, lowerY), lowerRadii),
+  const upperLeft = ellipseMask(
+    probe,
+    d.vec2f(center.x - upperSpread, upperY + bank * radius * 0.04),
+    upperRadii * d.vec2f(1 - bank * 0.07, 1 - bank * 0.04),
   );
+  const upperRight = ellipseMask(
+    probe,
+    d.vec2f(center.x + upperSpread, upperY - bank * radius * 0.04),
+    upperRadii * d.vec2f(1 + bank * 0.07, 1 + bank * 0.04),
+  );
+  const lowerLeft = ellipseMask(
+    probe,
+    d.vec2f(center.x - lowerSpread, lowerY + bank * radius * 0.03),
+    lowerRadii * d.vec2f(1 - bank * 0.05, 1 - bank * 0.03),
+  );
+  const lowerRight = ellipseMask(
+    probe,
+    d.vec2f(center.x + lowerSpread, lowerY - bank * radius * 0.03),
+    lowerRadii * d.vec2f(1 + bank * 0.05, 1 + bank * 0.03),
+  );
+  return std.saturate(
+    (upperLeft + upperRight) * 0.46 + (lowerLeft + lowerRight) * 0.3,
+  ) * (0.78 + std.abs(beat) * 0.22);
 }
 
 function shadowReach(shadowToLight: d.v3f): number {
@@ -590,7 +686,9 @@ function fairySurface(uv: d.v2f, tint: d.v3f, depth: number): d.v4f {
   'use gpu';
   const radius = bulbRadius() * 1.15;
   const center = relightLayout.$.params.lightPosition;
-  const beat = std.sin(relightLayout.$.params.fairyTime * FAIRY_WING_SPEED);
+  const localUv = fairyLocalUv(uv);
+  const beat = fairyWingBeat();
+  const bank = relightLayout.$.params.fairyBank;
   const wingOpen = 0.34 + std.abs(beat) * 0.66;
   const upperSpread = radius * (0.38 + wingOpen * 0.42);
   const lowerSpread = radius * (0.3 + wingOpen * 0.34);
@@ -604,48 +702,67 @@ function fairySurface(uv: d.v2f, tint: d.v3f, depth: number): d.v4f {
     radius * (0.16 + wingOpen * 0.36),
     radius * (0.31 - wingOpen * 0.07),
   );
-  const upperLeft = ellipseMask(uv, d.vec2f(center.x - upperSpread, upperY), upperRadii);
-  const upperRight = ellipseMask(uv, d.vec2f(center.x + upperSpread, upperY), upperRadii);
-  const lowerLeft = ellipseMask(uv, d.vec2f(center.x - lowerSpread, lowerY), lowerRadii);
-  const lowerRight = ellipseMask(uv, d.vec2f(center.x + lowerSpread, lowerY), lowerRadii);
+  const upperLeftCenter = d.vec2f(
+    center.x - upperSpread,
+    upperY + bank * radius * 0.04,
+  );
+  const upperRightCenter = d.vec2f(
+    center.x + upperSpread,
+    upperY - bank * radius * 0.04,
+  );
+  const upperLeftRadii = upperRadii * d.vec2f(1 - bank * 0.07, 1 - bank * 0.04);
+  const upperRightRadii = upperRadii * d.vec2f(1 + bank * 0.07, 1 + bank * 0.04);
+  const lowerLeftCenter = d.vec2f(
+    center.x - lowerSpread,
+    lowerY + bank * radius * 0.03,
+  );
+  const lowerRightCenter = d.vec2f(
+    center.x + lowerSpread,
+    lowerY - bank * radius * 0.03,
+  );
+  const lowerLeftRadii = lowerRadii * d.vec2f(1 - bank * 0.05, 1 - bank * 0.03);
+  const lowerRightRadii = lowerRadii * d.vec2f(1 + bank * 0.05, 1 + bank * 0.03);
+  const upperLeft = ellipseMask(localUv, upperLeftCenter, upperLeftRadii);
+  const upperRight = ellipseMask(localUv, upperRightCenter, upperRightRadii);
+  const lowerLeft = ellipseMask(localUv, lowerLeftCenter, lowerLeftRadii);
+  const lowerRight = ellipseMask(localUv, lowerRightCenter, lowerRightRadii);
   const wings = std.saturate(upperLeft + upperRight + lowerLeft + lowerRight);
-  const innerUpperRadii = upperRadii * d.vec2f(0.58, 0.54);
   const wingVeins = std.saturate(
     wings -
       0.74 *
-        (ellipseMask(uv, d.vec2f(center.x - upperSpread, upperY), innerUpperRadii) +
-          ellipseMask(uv, d.vec2f(center.x + upperSpread, upperY), innerUpperRadii)),
+        (ellipseMask(localUv, upperLeftCenter, upperLeftRadii * d.vec2f(0.58, 0.54)) +
+          ellipseMask(localUv, upperRightCenter, upperRightRadii * d.vec2f(0.58, 0.54))),
   );
   const head = ellipseMask(
-    uv,
+    localUv,
     center - d.vec2f(0, radius * 0.43),
     d.vec2f(radius * 0.17, radius * 0.18),
   );
   const hair = ellipseMask(
-    uv,
+    localUv,
     center + d.vec2f(radius * 0.14, 0 - radius * 0.52),
     d.vec2f(radius * 0.12, radius * 0.11),
   );
   const torso = segmentMask(
-    uv,
+    localUv,
     center - d.vec2f(0, radius * 0.24),
     center + d.vec2f(0, radius * 0.2),
     radius * 0.1,
   );
   const skirt = ellipseMask(
-    uv,
+    localUv,
     center + d.vec2f(0, radius * 0.2),
     d.vec2f(radius * 0.24, radius * 0.16),
   );
   const arms = std.saturate(
     segmentMask(
-      uv,
+      localUv,
       center - d.vec2f(0, radius * 0.12),
       center + d.vec2f(0 - radius * 0.38, radius * 0.02),
       radius * 0.055,
     ) +
       segmentMask(
-        uv,
+        localUv,
         center - d.vec2f(0, radius * 0.1),
         center + d.vec2f(radius * 0.42, 0 - radius * 0.02),
         radius * 0.055,
@@ -653,68 +770,67 @@ function fairySurface(uv: d.v2f, tint: d.v3f, depth: number): d.v4f {
   );
   const legs = std.saturate(
     segmentMask(
-      uv,
+      localUv,
       center + d.vec2f(0 - radius * 0.08, radius * 0.28),
       center + d.vec2f(0 - radius * 0.2, radius * 0.68),
       radius * 0.05,
     ) +
       segmentMask(
-        uv,
+        localUv,
         center + d.vec2f(radius * 0.08, radius * 0.28),
         center + d.vec2f(radius * 0.18, radius * 0.64),
         radius * 0.05,
       ),
+  );
+  const lampMask = ellipseMask(
+    localUv,
+    center + d.vec2f(0, radius * 0.22),
+    d.vec2f(radius * 0.105, radius * 0.135),
   );
   const bodyMask = std.saturate(head + hair + torso + skirt + arms + legs);
   const wingMask = std.saturate(wings * 0.42 + wingVeins * 0.38) * (1 - bodyMask * 0.74);
   const visibility = std.smoothstep(
     d.f32(0),
     BULB_OCCLUSION_SOFTNESS,
-    relightLayout.$.params.lightZ + radius * 0.35 - surfaceZ(depth),
+    relightLayout.$.params.lightZ +
+      fairyLocalDepth(localUv) +
+      radius * 0.35 -
+      surfaceZ(depth),
   );
-  const coverage = std.saturate(bodyMask + wingMask * 0.72) * visibility;
+  const coverage = std.saturate(bodyMask + wingMask * 0.42) * visibility;
   const bodyTint = std.mix(d.vec3f(1, 0.4, 0.1), tint, d.f32(0.34));
   const wingTint = std.mix(
     d.vec3f(0.22, 0.84, 1),
     d.vec3f(1, 0.42, 0.86),
     d.f32(0.24 + wingOpen * 0.16),
   );
+  const lampTint = std.mix(tint, d.vec3f(0.78, 1, 0.2), d.f32(0.38));
   const emission =
-    bodyTint * (FAIRY_BODY_EMISSION * bodyMask) +
-    wingTint * (FAIRY_WING_EMISSION * (0.72 + wingOpen * 0.46) * wingMask);
-  return d.vec4f(emission / std.max(bodyMask + wingMask, d.f32(0.001)), coverage);
+    bodyTint * (FAIRY_BODY_SURFACE * bodyMask) +
+    wingTint * (FAIRY_WING_SURFACE * (0.72 + wingOpen * 0.28) * wingMask) +
+    lampTint * (FIREFLY_LAMP_EMISSION * fireflyPulse() * lampMask);
+  const surfaceWeight = std.max(bodyMask + wingMask + lampMask, d.f32(0.001));
+  return d.vec4f(emission / surfaceWeight, coverage);
 }
 
 function fairyGlow(uv: d.v2f, tint: d.v3f): d.v3f {
   'use gpu';
   const radius = bulbRadius();
-  const center = relightLayout.$.params.lightPosition;
-  const beat = std.sin(relightLayout.$.params.fairyTime * FAIRY_WING_SPEED);
-  const wingSpread = radius * (0.5 + std.abs(beat) * 0.45);
-  const bodyHalo = std.exp(0 - std.length(uv - center) / (radius * 1.35));
-  const leftHalo = std.exp(
-    0 - std.length(uv - (center + d.vec2f(0 - wingSpread, beat * radius * 0.08))) / radius,
-  );
-  const rightHalo = std.exp(
-    0 - std.length(uv - (center + d.vec2f(wingSpread, beat * radius * 0.08))) / radius,
-  );
-  const trailDirection = std.normalize(
-    d.vec2f(
-      std.cos(relightLayout.$.params.fairyTime * 0.73),
-      std.sin(relightLayout.$.params.fairyTime * 0.91),
-    ),
-  );
-  const firstSpark = center - trailDirection * (radius * 1.7);
-  const secondSpark = center - trailDirection * (radius * 2.8);
+  const center = fairyLampUv();
+  const forward = fairyForward();
+  const coreHalo = std.exp(0 - std.length(uv - center) / (radius * 0.72));
+  const softVeil = std.exp(0 - std.length(uv - center) / (radius * 1.8));
+  const firstSpark = center - forward * (radius * 1.55);
+  const secondSpark = center - forward * (radius * 2.55);
   const trail =
     std.exp(0 - std.length(uv - firstSpark) / (radius * 0.28)) +
     0.62 * std.exp(0 - std.length(uv - secondSpark) / (radius * 0.2));
-  const exposure = bulbExposure(radius);
-  const wingTint = std.mix(d.vec3f(0.26, 0.9, 1), tint, d.f32(0.28));
-  return (
-    tint * (bodyHalo * FAIRY_GLOW) +
-    wingTint * ((leftHalo + rightHalo) * 0.36 + trail * FAIRY_TRAIL_GLOW)
-  ) * exposure;
+  const exposure = bulbExposure(radius, center);
+  const lampTint = std.mix(tint, d.vec3f(0.78, 1, 0.2), d.f32(0.38));
+  return lampTint *
+    ((coreHalo * FIREFLY_GLOW + softVeil * 0.14) * fireflyPulse() +
+      trail * FIREFLY_TRAIL_GLOW) *
+    exposure;
 }
 
 function compress(value: number): number {
@@ -763,9 +879,15 @@ export const relightFragment = tgpu.fragmentFn({
   const centered = uv - d.vec2f(0.5);
   const noise = dither(uv);
   const position = d.vec3f(centered, surfaceZ(surface.w));
+  let lightUv = d.vec2f(relightLayout.$.params.lightPosition);
+  let lightZ = d.f32(relightLayout.$.params.lightZ);
+  if (relightLayout.$.params.fairyEnabled !== 0) {
+    lightUv = fairyLampUv();
+    lightZ = fairyLampZ();
+  }
   const lightPosition = d.vec3f(
-    relightLayout.$.params.lightPosition - d.vec2f(0.5),
-    relightLayout.$.params.lightZ,
+    lightUv - d.vec2f(0.5),
+    lightZ,
   );
   const shadowOrigin = d.vec3f(centered, shadowZ(surface.w));
   let mainShadow = d.f32(1);
@@ -788,10 +910,7 @@ export const relightFragment = tgpu.fragmentFn({
   let lit = albedo * AMBIENT_FILL * (relightLayout.$.params.exposure * occlusion);
   const presence = bulbPresence();
   if (relightLayout.$.params.fairyEnabled !== 0) {
-    const beat = std.sin(relightLayout.$.params.fairyTime * FAIRY_WING_SPEED);
-    const wingPulse = 0.72 + std.abs(beat) * 0.38;
-    const leftLight = fairyWingPosition(-1);
-    const rightLight = fairyWingPosition(1);
+    const pulse = fireflyPulse();
     const projectedWings = fairyProjectedWingShadow(position, lightPosition);
     const wingSilhouette =
       1 -
@@ -800,91 +919,26 @@ export const relightFragment = tgpu.fragmentFn({
           FAIRY_WING_CASTER_STRENGTH *
           relightLayout.$.params.shadow,
       );
-    let leftShadow = d.f32(1);
-    let rightShadow = d.f32(1);
-    if (relightLayout.$.params.shadow > 0) {
-      const leftToLight = leftLight - shadowOrigin;
-      const leftDistance = std.max(std.length(leftToLight), d.f32(0.0001));
-      const leftTraced = fairyShadowFactor(
-        shadowOrigin,
-        leftToLight / leftDistance,
-        shadowReach(leftToLight),
-        std.fract(noise + 0.31),
-        leftLight.z,
-      );
-      leftShadow = std.mix(d.f32(1), leftTraced, relightLayout.$.params.shadow * 0.82);
-      const rightToLight = rightLight - shadowOrigin;
-      const rightDistance = std.max(std.length(rightToLight), d.f32(0.0001));
-      const rightTraced = fairyShadowFactor(
-        shadowOrigin,
-        rightToLight / rightDistance,
-        shadowReach(rightToLight),
-        std.fract(noise + 0.67),
-        rightLight.z,
-      );
-      rightShadow = std.mix(d.f32(1), rightTraced, relightLayout.$.params.shadow * 0.82);
-    }
-    const leftTint = std.mix(tint, d.vec3f(0.28, 0.92, 1), d.f32(0.5));
-    const rightTint = std.mix(tint, d.vec3f(1, 0.48, 0.82), d.f32(0.34));
+    const lampTint = std.mix(tint, d.vec3f(0.78, 1, 0.2), d.f32(0.38));
     lit += directLight(
       position,
       normal,
       albedo,
       occlusion,
       lightPosition,
-      tint,
-      LIGHT_RADIUS,
-      relightLayout.$.params.intensity * 0.64,
+      lampTint,
+      FIREFLY_LIGHT_RADIUS,
+      relightLayout.$.params.intensity * pulse,
       mainShadow * wingSilhouette,
     );
-    lit += directLight(
-      position,
-      normal,
-      albedo,
-      occlusion,
-      leftLight,
-      leftTint,
-      FAIRY_WING_LIGHT_RADIUS,
-      relightLayout.$.params.intensity * 0.27 * wingPulse,
-      leftShadow,
-    );
-    lit += directLight(
-      position,
-      normal,
-      albedo,
-      occlusion,
-      rightLight,
-      rightTint,
-      FAIRY_WING_LIGHT_RADIUS,
-      relightLayout.$.params.intensity * 0.27 * wingPulse,
-      rightShadow,
-    );
     lit += fairyReflection(
       position,
       normal,
       cameraColor,
       lightPosition,
-      tint,
-      LIGHT_RADIUS,
-      relightLayout.$.params.intensity * 0.72,
-    );
-    lit += fairyReflection(
-      position,
-      normal,
-      cameraColor,
-      leftLight,
-      leftTint,
-      FAIRY_WING_LIGHT_RADIUS,
-      relightLayout.$.params.intensity * 0.3 * wingPulse,
-    );
-    lit += fairyReflection(
-      position,
-      normal,
-      cameraColor,
-      rightLight,
-      rightTint,
-      FAIRY_WING_LIGHT_RADIUS,
-      relightLayout.$.params.intensity * 0.3 * wingPulse,
+      lampTint,
+      FIREFLY_LIGHT_RADIUS,
+      relightLayout.$.params.intensity * 0.9 * pulse,
     );
     const fairy = fairySurface(uv, tint, surface.w);
     lit = std.mix(lit, fairy.xyz * presence, fairy.w * presence);

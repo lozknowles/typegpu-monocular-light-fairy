@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "feature": "banked fairy flight with a firefly-style abdomen light",
+  "sourceBaseline": "eba8e99c441f5da889e7e6bfefb4b7c0f8994422",
+  "sourceState": "qualified working tree; not yet committed or pushed",
+  "privacy": {
+    "source": "bundled public demo photograph",
+    "cameraUsed": false,
+    "cameraFramesRetained": false,
+    "previewUrl": "redacted private tailnet HTTPS route"
+  },
+  "implementation": {
+    "motion": "wide non-repeating harmonic swoops with climb/dive depth, tangent heading, and turn-derived bank",
+    "light": "one compact yellow-green-biased, user-tinted, softly pulsing abdomen source",
+    "wings": "four translucent procedural wings with a maximum analytic caster strength of 0.28 before the Shadow control",
+    "reflection": "single-source local reflective cue; not semantic lens detection or optical ray tracing",
+    "sourceSha256": {
+      "light-input.ts": "0071ce915febd77b77c722c845b5cc537f56de9444f90b52d98527c8138334ca",
+      "shaders.ts": "80d6e66503e4b9e09b6c2113bf44e96beef0caa66bea69c989912499eebdfe62",
+      "renderer.ts": "5953d7e548f9120d11178145ca860ea3c3434a5a12a1e03c7ebb6966316286ea",
+      "index.ts": "1b721f80c8a7e38a1eb979e9bd0bae0a4797240f97696d0d1538b7cb5fa6f928",
+      "index.html": "864970272e7fa86da8aacd2a61782d152a4040adb8a37b1d2236386c436a5e79"
+    }
+  },
+  "hpubuntuStatic": {
+    "capturedAt": "2026-08-27T05:04:52.323Z",
+    "outcome": "passed",
+    "browser": "Chromium 151.0.7922.108 on Linux",
+    "adapter": "Intel Gen9 low-power request",
+    "webgpu": true,
+    "shaderF16": true,
+    "timestampQuery": "true GPU pass timestamps",
+    "model": {
+      "bundle": "depthart-relative-s-448-balanced",
+      "precision": "mixed-fp16",
+      "bytes": 13662992,
+      "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+      "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+    },
+    "timingsMs": {
+      "modelLoadAndVerify": 290,
+      "pipelineCompile": 1161.7200000286102,
+      "coldWall": 227.18500006198883,
+      "coldGpuCompute": 155.833732,
+      "coldGpuRender": 9.930845,
+      "warmWallMedian": 166.65499997138977,
+      "warmGpuComputeMedian": 148.533346,
+      "warmGpuRenderMedian": 10.045843,
+      "warmSamples": 6
+    },
+    "renderFps": 58.81414729650617,
+    "droppedFrames": 2,
+    "outputSha256": {
+      "relit": "a4fc051dba320be8924abef1ed7d490567b1844d2fe2584235836ab276084c29",
+      "camera": "f31826683a6d8092eff3614a24e64a8e840c7dc5eb8225d4493d66656e351ce4",
+      "relativeDisparity": "0b272c1c86f2f0e27783fa63bbd4844b9e8739f9127893b7282996b79c2a8ad4",
+      "normals": "5c402580659f463ca269928798ddc97506b52846d886c2f9926e8020db7d6b56"
+    }
+  },
+  "msiStatic": {
+    "capturedAt": "2026-08-27T05:06:38.867Z",
+    "outcome": "passed",
+    "browser": "Google Chrome 151 on Windows",
+    "adapter": "Intel Xe-LPG low-power request",
+    "webgpu": true,
+    "shaderF16": true,
+    "timestampQuery": "true GPU pass timestamps",
+    "model": {
+      "bundle": "depthart-relative-s-448-balanced",
+      "precision": "mixed-fp16",
+      "bytes": 13662992,
+      "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+      "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+    },
+    "timingsMs": {
+      "modelLoadAndVerify": 242.00499999523163,
+      "pipelineCompile": 2093.830000013113,
+      "coldWall": 135.75,
+      "coldGpuCompute": 89.718784,
+      "coldGpuRender": 3.538944,
+      "warmWallMedian": 88.2950000166893,
+      "warmGpuComputeMedian": 72.220672,
+      "warmGpuRenderMedian": 3.93216,
+      "warmSamples": 6
+    },
+    "renderFps": 60.00511519113247,
+    "droppedFrames": 20,
+    "outputSha256": {
+      "relit": "a6fb53ba24c5674a96afaa54ed1305d550c42aff5c7331e6ea9931c706ca1dee",
+      "camera": "284da64bf2fff90321455b0c2f0119d46b4c525ce62e2b93b10a27e52fcb3f8e",
+      "relativeDisparity": "e6bce7994adb380b9d4301dc3a2212d3e412958684b92ac20f5f613c774c9879",
+      "normals": "b4600cfca728bfc381dbe2d195550fd686b3df86abc535d08f51d56f36162c8b"
+    },
+    "visualChecks": [
+      "Canvas captures 3.5 seconds apart showed wide positional displacement, changed heading, and changed scene lighting.",
+      "Click-to-pin and click-to-resume returned the fairy to autonomous flight.",
+      "The visible source was a compact abdomen glow; no wing-mounted light lobes remained.",
+      "No camera permission was requested and no camera photograph was captured or retained."
+    ]
+  },
+  "protectedWorkloads": {
+    "nvidiaAttempt": "blocked by Vulkan out-of-device-memory while protected workloads occupied the Quadro P5000",
+    "action": "no process was stopped, killed, restarted, or reconfigured",
+    "ports8080And8081": "remained listening"
+  },
+  "interpretationBoundary": "The model output is affine-invariant relative disparity, not metric depth or real-world distance."
+}

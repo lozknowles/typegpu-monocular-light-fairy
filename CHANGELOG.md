@@ -5,6 +5,31 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced the idle looping hover with wide autonomous swoops, climbs, dives, tangent orientation,
+  and banked turns; manual tap/drag placement now pins the fairy until it is released.
+- Added bounded pseudo-3D roll and pitch projection. The body and wings now foreshorten and shear,
+  the abdomen light moves in depth, and posed wings refine their shadow-caster plane.
+- Replaced the two emissive wing lobes with one compact, softly pulsing firefly-style abdomen light
+  and a motion-aligned glow trail.
+- Reduced projected wing opacity and made wing appearance asymmetric while banking, so translucent
+  wings add moving detail without producing disproportionate scene shadow.
+- Reduced the earlier hand-tuned left/right wing asymmetry so it does not compound the new geometric
+  foreshortening.
+- Reduced reflective cues from three moving lobes to the single physical light source.
+
+### Qualification
+
+- Passed static-image qualification on hpubuntu Intel Gen9 and MSI Intel Xe-LPG using the pinned
+  FP16 model and true GPU timestamps; all four views produced non-black pixel-readback evidence.
+- Visually confirmed wide autonomous displacement, changed heading and lighting, manual pin, and
+  flight resume on MSI without requesting camera access or retaining a camera image.
+- Passed hpubuntu and MSI static-demo roll-and-pitch checks with time-separated canvas hashes and
+  live pose diagnostics; no camera permission or camera image was used.
+- Reconfirmed the busy Quadro P5000 FP32 path as blocked by Vulkan memory pressure without stopping
+  or reconfiguring any protected workload.
+
 ### Pending qualification
 
 - Pixel 8 Pro front/rear camera acceptance.

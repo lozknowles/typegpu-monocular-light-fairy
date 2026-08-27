@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "feature": "bounded pseudo-3D roll and pitch for the procedural firefly fairy",
+  "sourceBaseline": "eba8e99c441f5da889e7e6bfefb4b7c0f8994422",
+  "sourceState": "qualified working tree; not committed or pushed",
+  "privacy": {
+    "source": "bundled public demo photograph",
+    "cameraUsed": false,
+    "cameraPermissionRequested": false,
+    "cameraFramesRetained": false,
+    "previewUrl": "redacted private tailnet HTTPS route",
+    "accessScope": "existing private tailnet route only; no Tailscale Serve or public ingress change"
+  },
+  "implementation": {
+    "pose": "tangent yaw plus bounded longitudinal roll and lateral pitch projected analytically in the fragment shader",
+    "maximumPose": {
+      "rollRadians": 1.05,
+      "pitchRadians": 0.68
+    },
+    "projection": "wing-span and body-length foreshortening with compound-pose shear and a small bank cant",
+    "light": "the single firefly-style abdomen source follows the projected UV position and pose-derived local depth",
+    "shadow": "two-stage scene-relative caster-plane estimate incorporates the posed wing depth while caster strength remains capped at 0.28 before the Shadow control",
+    "boundary": "analytic pseudo-3D projection; not a 3D mesh, skeletal simulation, semantic reconstruction, or optical ray trace",
+    "sourceSha256": {
+      "light-input.ts": "755d12be26658a9f3f8101ef16a786bd5bcbe218ac51190784081beef4d9279e",
+      "renderer.ts": "0987083b7f7be796b2259c1ff8f510ab0073a87d0c386eca4c550de9e61198ba",
+      "shaders.ts": "c62fe0ae5beb4b91551c5fb2b42e4e0f50c8ba61a1404e44bb18edd6ee88df4c",
+      "index.ts": "2212d0278ba34be91c7f5192d062857d4e0a20a73fb7d301cad7c02501a3bccb",
+      "index.html": "0f1b341b1ee7dbc578ad38b3175b5dd1bbe31272ec4f06bd1a9c1055fa1ee958"
+    },
+    "buildSha256": {
+      "dist/index.html": "535163275e03fee21896ebb7686a239f4ca5f8ec589b8fb55228fcdfb0425a32",
+      "dist/assets/index-CaiCftMH.js": "bedfbfc76f4033ec130fe890975ec8b99668e2ad579c41b5492695ed1fc750b2",
+      "dist/assets/index-CD16JY9F.css": "d8a88eca729154a3b55eed03e99f403eb3cc859f4d2d1eea5f65a35898d40415"
+    }
+  },
+  "hpubuntuStatic": {
+    "capturedAt": "2026-08-27T05:36:09.787Z",
+    "outcome": "passed",
+    "browser": "Chromium 151.0.7922.108 on Linux",
+    "adapter": "Intel Gen9 low-power request",
+    "webgpu": true,
+    "shaderF16": true,
+    "timestampQuery": "true GPU pass timestamps",
+    "model": {
+      "bundle": "depthart-relative-s-448-balanced",
+      "precision": "mixed-fp16",
+      "bytes": 13662992,
+      "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+      "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+    },
+    "timingsMs": {
+      "modelLoadAndVerify": 246.70999991893768,
+      "pipelineCompile": 928.829999923706,
+      "coldWall": 223.4649999141693,
+      "coldGpuCompute": 155.638485,
+      "coldGpuRender": 9.933011,
+      "warmWallMedian": 165.80000007152557,
+      "warmGpuComputeMedian": 147.500445,
+      "warmGpuRenderMedian": 10.056343,
+      "warmSamples": 6
+    },
+    "poseRange": {
+      "rollNormalized": [-0.4560223400648573, 0.1503435308488934],
+      "pitchNormalized": [-1, 0.9700670674265786],
+      "headingRadians": [-3.0868689689462285, 2.5760800120289695],
+      "approximateRollDegrees": [-27, 9],
+      "approximatePitchDegrees": [-39, 38]
+    },
+    "canvasSha256": [
+      "50195083828ad8b247a8d07b2d6f60b61631c9f5dce91d2adf5f45218075fd1c",
+      "73118aaa5b1d6f9d688e08a1286c9da5f9f0566b3bdfc05e8b9964d26a33c385",
+      "dbfe130b324d979c264ea8cbd951490206913f0035f1942faf12b6d2d572872f",
+      "86884592953381171bb8ad6f4b555efea177d03a90e6c13437f4c47ab409ea60"
+    ],
+    "pageErrors": []
+  },
+  "msiStatic": {
+    "capturedAt": "2026-08-27T05:40:55.386Z",
+    "outcome": "passed",
+    "browser": "Google Chrome 151 on Windows",
+    "adapter": "Intel Xe-LPG low-power request",
+    "webgpu": true,
+    "shaderF16": true,
+    "timestampQuery": "true GPU pass timestamps",
+    "model": {
+      "bundle": "depthart-relative-s-448-balanced",
+      "precision": "mixed-fp16",
+      "bytes": 13662992,
+      "revision": "913a7c13ddfbd48549279555d1db98172e8e5e0d",
+      "sha256": "e6d7b65bd2888771790d3cc3ad827133f0b014f05010347b6fc6fc891ff9e19c"
+    },
+    "timingsMs": {
+      "modelLoadAndVerify": 157.84999999403954,
+      "pipelineCompile": 4169.25,
+      "coldWall": 236,
+      "coldGpuCompute": 77.070336,
+      "coldGpuRender": 2.883584,
+      "warmWallMedian": 141.79000002145767,
+      "warmGpuComputeMedian": 66.322432,
+      "warmGpuRenderMedian": 2.94912,
+      "warmSamples": 6
+    },
+    "timeSeparatedPoseSamples": [
+      {
+        "headingRadians": -0.9588753401769922,
+        "rollNormalized": 0.12625280054585697,
+        "pitchNormalized": 0.0783148958388356,
+        "canvasSha256": "32df24a5172c8d4a79fd63f7a5b5f3c5d6e1024f6ff790b797aca5fb98cd5857"
+      },
+      {
+        "headingRadians": 1.529192961022586,
+        "rollNormalized": 0.3706903649150104,
+        "pitchNormalized": -0.34941426738627374,
+        "canvasSha256": "10311fb922b3082884a7d54b7e3d6afb7887c30b4d984da94e222b06af38cad8"
+      },
+      {
+        "headingRadians": -3.321212913547814,
+        "rollNormalized": 0.1040672155159974,
+        "pitchNormalized": 0.2902060694456125,
+        "canvasSha256": "f05077552f7f5b6b879fd29ee72dc2dd839f7cb11e48ddc299195aa70e8e7bae"
+      }
+    ],
+    "visualChecks": [
+      "The live diagnostic changed through roll 8 degrees and pitch 3 degrees, roll 22 degrees and pitch -14 degrees, then roll 6 degrees and pitch 11 degrees.",
+      "Time-separated canvas captures showed different heading, silhouette foreshortening, body tilt, wing appearance, and scene lighting.",
+      "The visible source remained the single compact abdomen glow and the wing caster remained restrained.",
+      "No camera permission was requested and no camera photograph was captured or retained."
+    ]
+  },
+  "preview": {
+    "serverPidPreserved": 1377981,
+    "rollbackDirectory": "retained outside the repository; exact path redacted",
+    "httpChecks": {
+      "get": "passed with new roll-and-pitch wording",
+      "post": 405,
+      "pathTraversal": 404
+    }
+  },
+  "protectedWorkloads": {
+    "action": "no process was stopped, killed, restarted, or reconfigured",
+    "ports8080And8081": "required to remain listening; checked again after qualification"
+  },
+  "interpretationBoundary": "The model output is affine-invariant relative disparity, not metric depth or real-world distance."
+}

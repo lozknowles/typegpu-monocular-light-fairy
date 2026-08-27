@@ -14,6 +14,8 @@ evidence/*
 !evidence/README.md
 !evidence/qualification-hpubuntu-wing-reflection-20260826.json
 !evidence/qualification-msi-live-wing-reflection-20260826.json
+!evidence/qualification-firefly-flight-20260827.json
+!evidence/qualification-fairy-rotation-20260827.json
 
 .DS_Store
 Thumbs.db

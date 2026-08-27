@@ -21,6 +21,8 @@ import {
 
 const CAMERA_FRAME_RATE = 60;
 const LIVE_TIMING_SAMPLE_COUNT = 5;
+const FAIRY_MAX_ROLL_DEGREES = 60;
+const FAIRY_MAX_PITCH_DEGREES = 39;
 const DEMO_IMAGE_URL = '/demo.jpg';
 const FACING_MODES = ['front', 'back'] as const;
 const VIEW_OUTPUT_LABELS = [
@@ -100,6 +102,11 @@ interface QualificationRecord {
     dropped: number;
     fps?: number;
   };
+  fairyPose: {
+    headingRadians: number;
+    pitchNormalized: number;
+    rollNormalized: number;
+  };
   outputs?: Record<'camera' | 'normals' | 'relativeDisparity' | 'relit', PixelDiagnostics>;
   error?: string;
 }
@@ -154,6 +161,11 @@ const qualification: QualificationRecord = {
   webgpu: navigator.gpu !== undefined,
   features: { shaderF16: false, timestampQuery: false, timestampQueryEnabled: false },
   frames: { dropped: 0 },
+  fairyPose: {
+    headingRadians: defaultRelightingSettings.fairyHeading,
+    pitchNormalized: defaultRelightingSettings.fairyPitch,
+    rollNormalized: defaultRelightingSettings.fairyBank,
+  },
 };
 window.__TYPEGPU_QUALIFICATION__ = qualification;
 
@@ -375,7 +387,19 @@ function recordLiveTiming(generation: number, timing: RenderTiming): void {
 
 const light = setupLightInput(
   canvas,
-  (update) => renderer?.update(update),
+  (update) => {
+    renderer?.update(update);
+    qualification.fairyPose = {
+      headingRadians: update.fairyHeading ?? qualification.fairyPose.headingRadians,
+      pitchNormalized: update.fairyPitch ?? qualification.fairyPose.pitchNormalized,
+      rollNormalized: update.fairyBank ?? qualification.fairyPose.rollNormalized,
+    };
+    setDiagnostic(
+      'diag-fairy-pose',
+      `Roll ${(qualification.fairyPose.rollNormalized * FAIRY_MAX_ROLL_DEGREES).toFixed(0)}° · ` +
+        `pitch ${(qualification.fairyPose.pitchNormalized * FAIRY_MAX_PITCH_DEGREES).toFixed(0)}°`,
+    );
+  },
   listenerController.signal,
 );
 
@@ -394,7 +418,7 @@ const camera = new DepthCameraSession(
       }
       const generation = liveRenderGeneration;
       liveRenderInFlight = true;
-      light.orbitTick();
+      light.flightTick();
       activeRenderer.update({ fairyTime: performance.now() / 1000 });
       let measurement: Promise<RenderTiming> | undefined;
       try {
@@ -577,7 +601,7 @@ function startStaticLoop(bitmap: ImageBitmap): void {
     if (activeRenderer) {
       const now = performance.now();
       frameMeter.noteStatic(now);
-      light.orbitTick();
+      light.flightTick();
       activeRenderer.update({ fairyTime: now / 1000 });
       const source = new VideoFrame(bitmap, { timestamp: now * 1000 });
       try {
@@ -692,7 +716,14 @@ async function attachBundle(bytes: ArrayBuffer): Promise<{ parseMs: number; comp
   renderer.attach(nextPlan);
   plan?.destroy();
   plan = nextPlan;
-  renderer.update({ fairyEnabled, lightPosition: light.lightPosition, lightZ: light.lightZ });
+  renderer.update({
+    fairyEnabled,
+    lightPosition: light.lightPosition,
+    lightZ: light.lightZ,
+    fairyHeading: light.fairyHeading,
+    fairyBank: light.fairyBank,
+    fairyPitch: light.fairyPitch,
+  });
   renderer.resetHistory();
   depthDirty = true;
   return { parseMs, compileMs };

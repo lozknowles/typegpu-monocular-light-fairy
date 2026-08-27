@@ -63,6 +63,9 @@ interface RelightingState {
   readonly lightZ: number;
   readonly fairyEnabled: boolean;
   readonly fairyTime: number;
+  readonly fairyHeading: number;
+  readonly fairyBank: number;
+  readonly fairyPitch: number;
   readonly mirror: boolean;
   readonly lightColor: readonly [number, number, number];
   readonly exposure: number;
@@ -109,6 +112,9 @@ export const defaultRelightingSettings: RelightingState = {
   lightZ: 0.42,
   fairyEnabled: true,
   fairyTime: 0,
+  fairyHeading: -0.4,
+  fairyBank: 0,
+  fairyPitch: 0,
   mirror: true,
   lightColor: [1, 0.72, 0.46],
   exposure: 0.5,
@@ -485,6 +491,9 @@ export class DepthRelightingRenderer {
       lightPosition: d.vec2f(...this.#settings.lightPosition),
       lightZ: this.#settings.lightZ,
       fairyTime: this.#settings.fairyTime,
+      fairyHeading: this.#settings.fairyHeading,
+      fairyBank: this.#settings.fairyBank,
+      fairyPitch: this.#settings.fairyPitch,
       exposure: this.#settings.exposure,
       intensity: this.#settings.intensity,
       relief: this.#settings.relief,

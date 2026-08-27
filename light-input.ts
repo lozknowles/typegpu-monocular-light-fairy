@@ -1,7 +1,11 @@
 import { LIGHT_Z_MAX, LIGHT_Z_MIN, defaultRelightingSettings } from './renderer.ts';
 
-const ORBIT_SPEED = 0.00024;
-const ORBIT_RADIUS = 0.26;
+const FLIGHT_PHASE_RATE = 0.00036;
+const FLIGHT_START_PHASE = 2.35;
+const FLIGHT_SAMPLE_MS = 70;
+const FLIGHT_BANK_GAIN = 5.5;
+const FLIGHT_PITCH_GAIN = 2.4;
+const FLIGHT_RESUME_MS = 900;
 const WHEEL_STEP_LIMIT = 60;
 const WHEEL_SENSITIVITY = 0.0015;
 const PINCH_SENSITIVITY = 0.004;
@@ -9,8 +13,7 @@ const LIGHT_GRAB_RADIUS = 0.08;
 const TAP_SLOP = 0.012;
 
 const LightControl = {
-  ORBIT: 'orbit',
-  CURSOR: 'cursor',
+  FLIGHT: 'flight',
   PINNED: 'pinned',
 } as const;
 type LightControl = (typeof LightControl)[keyof typeof LightControl];
@@ -24,20 +27,59 @@ type Gesture =
 interface LightUpdate {
   lightPosition?: [number, number];
   lightZ?: number;
+  fairyHeading?: number;
+  fairyBank?: number;
+  fairyPitch?: number;
 }
 
 interface LightInput {
   readonly lightPosition: [number, number];
   readonly lightZ: number;
-  /** Advances the idle orbit; call once per rendered frame */
-  orbitTick(): void;
+  readonly fairyHeading: number;
+  readonly fairyBank: number;
+  readonly fairyPitch: number;
+  /** Advances autonomous swooping flight; call once per rendered frame */
+  flightTick(): void;
+}
+
+interface FlightSample {
+  readonly x: number;
+  readonly y: number;
+  readonly zOffset: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Hovering steers the light, tap or drag pins it, scroll and pinch push it in depth */
+function smoothstep(value: number): number {
+  const clamped = clamp(value, 0, 1);
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
+function wrapAngle(angle: number): number {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
+}
+
+function mixAngle(from: number, to: number, amount: number): number {
+  return from + wrapAngle(to - from) * amount;
+}
+
+/** A wide, non-repeating harmonic path with climbs, dives, and speed variation. */
+function sampleFlight(now: number): FlightSample {
+  const phase = FLIGHT_START_PHASE + now * FLIGHT_PHASE_RATE;
+  return {
+    x: 0.5 + Math.cos(phase) * 0.29 + Math.cos(phase * 2.2 + 0.9) * 0.075,
+    y: 0.46 + Math.sin(phase * 1.58 + 0.4) * 0.16 + Math.sin(phase * 0.61 - 0.8) * 0.065,
+    zOffset: Math.sin(phase * 0.72 + 0.4) * 0.11 + Math.cos(phase * 1.83) * 0.035,
+  };
+}
+
+function headingBetween(from: FlightSample, to: FlightSample): number {
+  return Math.atan2(to.y - from.y, to.x - from.x);
+}
+
+/** Tap or drag pins the light; releasing it resumes autonomous banked flight. */
 export function setupLightInput(
   canvas: HTMLCanvasElement,
   onChange: (update: LightUpdate) => void,
@@ -45,22 +87,54 @@ export function setupLightInput(
 ): LightInput {
   const pointers = new Map<number, { x: number; y: number }>();
   let gesture: Gesture = { kind: 'none' };
-  let control: LightControl = LightControl.ORBIT;
+  let control: LightControl = LightControl.FLIGHT;
   let lightPosition: [number, number] = [...defaultRelightingSettings.lightPosition];
   let lightZ = defaultRelightingSettings.lightZ;
+  let lightZAnchor = lightZ;
+  let fairyHeading = defaultRelightingSettings.fairyHeading;
+  let fairyBank = defaultRelightingSettings.fairyBank;
+  let fairyPitch = defaultRelightingSettings.fairyPitch;
+  let flightResumeAt = performance.now();
+  let flightResumePosition: [number, number] = [...lightPosition];
+  let flightResumeZ = lightZ;
+  let flightResumeHeading = fairyHeading;
+  let flightResumeBank = fairyBank;
+  let flightResumePitch = fairyPitch;
 
   function placeLight(x: number, y: number): void {
-    lightPosition = [clamp(x, 0, 1), clamp(y, 0, 1)];
-    onChange({ lightPosition });
+    const next: [number, number] = [clamp(x, 0, 1), clamp(y, 0, 1)];
+    const distance = Math.hypot(next[0] - lightPosition[0], next[1] - lightPosition[1]);
+    if (distance > 0.001) {
+      fairyHeading = Math.atan2(next[1] - lightPosition[1], next[0] - lightPosition[0]);
+    }
+    fairyBank = 0;
+    fairyPitch = 0;
+    lightPosition = next;
+    onChange({ lightPosition, fairyHeading, fairyBank, fairyPitch });
   }
 
   function pushLight(amount: number): void {
     lightZ = clamp(lightZ + amount, LIGHT_Z_MIN, LIGHT_Z_MAX);
+    lightZAnchor = clamp(lightZAnchor + amount, LIGHT_Z_MIN, LIGHT_Z_MAX);
     onChange({ lightZ });
   }
 
+  function resumeFlight(): void {
+    control = LightControl.FLIGHT;
+    flightResumeAt = performance.now();
+    flightResumePosition = [...lightPosition];
+    flightResumeZ = lightZ;
+    flightResumeHeading = fairyHeading;
+    flightResumeBank = fairyBank;
+    flightResumePitch = fairyPitch;
+  }
+
   function pinLight(pinned: boolean): void {
-    control = pinned ? LightControl.PINNED : LightControl.CURSOR;
+    if (pinned) {
+      control = LightControl.PINNED;
+    } else {
+      resumeFlight();
+    }
   }
 
   function canvasFraction(event: PointerEvent): { x: number; y: number } | undefined {
@@ -136,9 +210,6 @@ export function setupLightInput(
         break;
       case 'none':
         canvas.style.cursor = overLight(point) ? 'grab' : 'crosshair';
-        if (control === LightControl.CURSOR) {
-          placeLight(point.x, point.y);
-        }
         break;
     }
   }
@@ -163,15 +234,10 @@ export function setupLightInput(
   }
 
   function enterCanvas(): void {
-    if (control !== LightControl.PINNED) {
-      control = LightControl.CURSOR;
-    }
+    canvas.style.cursor = 'crosshair';
   }
 
   function leaveCanvas(): void {
-    if (control !== LightControl.PINNED) {
-      control = LightControl.ORBIT;
-    }
     canvas.style.cursor = 'crosshair';
   }
 
@@ -202,15 +268,51 @@ export function setupLightInput(
     get lightZ() {
       return lightZ;
     },
-    orbitTick() {
-      if (control !== LightControl.ORBIT) {
+    get fairyHeading() {
+      return fairyHeading;
+    },
+    get fairyBank() {
+      return fairyBank;
+    },
+    get fairyPitch() {
+      return fairyPitch;
+    },
+    flightTick() {
+      if (control !== LightControl.FLIGHT) {
         return;
       }
-      const phase = performance.now() * ORBIT_SPEED;
-      placeLight(
-        0.5 + Math.cos(phase) * ORBIT_RADIUS,
-        0.44 + Math.sin(phase * 1.37) * ORBIT_RADIUS * 0.8,
+      const now = performance.now();
+      const previous = sampleFlight(now - FLIGHT_SAMPLE_MS);
+      const target = sampleFlight(now);
+      const next = sampleFlight(now + FLIGHT_SAMPLE_MS);
+      const targetHeading = headingBetween(previous, next);
+      const targetBank = clamp(
+        wrapAngle(headingBetween(target, next) - headingBetween(previous, target)) *
+          FLIGHT_BANK_GAIN,
+        -1,
+        1,
       );
+      const screenTravel = Math.max(
+        Math.hypot(next.x - previous.x, next.y - previous.y),
+        0.0001,
+      );
+      // Local forward is -Y in the shader, so a negative pitch leads a move towards the camera.
+      const targetPitch = clamp(
+        (0 - (next.zOffset - previous.zOffset) / screenTravel) * FLIGHT_PITCH_GAIN,
+        -1,
+        1,
+      );
+      const targetZ = clamp(lightZAnchor + target.zOffset, LIGHT_Z_MIN, LIGHT_Z_MAX);
+      const blend = smoothstep((now - flightResumeAt) / FLIGHT_RESUME_MS);
+      lightPosition = [
+        flightResumePosition[0] + (target.x - flightResumePosition[0]) * blend,
+        flightResumePosition[1] + (target.y - flightResumePosition[1]) * blend,
+      ];
+      lightZ = flightResumeZ + (targetZ - flightResumeZ) * blend;
+      fairyHeading = mixAngle(flightResumeHeading, targetHeading, blend);
+      fairyBank = flightResumeBank + (targetBank - flightResumeBank) * blend;
+      fairyPitch = flightResumePitch + (targetPitch - flightResumePitch) * blend;
+      onChange({ lightPosition, lightZ, fairyHeading, fairyBank, fairyPitch });
     },
   };
 }

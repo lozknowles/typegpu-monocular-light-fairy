@@ -75,8 +75,9 @@
           </div>
         </div>
         <p class="stage-hint">
-          Drag or tap the image to steer the fairy light. Its fluttering wings split the light into
-          animated colour lobes, cast projected wing silhouettes, and add local reflective glints.
+          The fairy now swoops, banks, climbs and dives across the image. Drag or tap to pin it;
+          tap it again to resume flight. It rolls into turns and pitches through depth changes, so a
+          compact firefly-style abdomen glow and restrained wing silhouette move in perspective.
           Switch between camera, relative disparity, normals, and relit views in the controls.
         </p>
       </section>
@@ -112,8 +113,8 @@
           <label class="fairy-toggle">
             <input id="fairy-light" type="checkbox" checked />
             <span>
-              <strong>Flying fairy light</strong>
-              <small>Fluttering procedural wings with three animated light and shadow lobes</small>
+              <strong>Flying fairy · firefly glow</strong>
+              <small>Banked swoops with one pulsing abdomen light and translucent wing shadows</small>
             </span>
           </label>
 
@@ -186,6 +187,8 @@
             <dd id="diag-dropped">0</dd>
             <dt>Timing source</dt>
             <dd id="diag-timing">Waiting…</dd>
+            <dt>Fairy pose</dt>
+            <dd id="diag-fairy-pose">Roll 0° · pitch 0°</dd>
           </dl>
           <p class="diagnostics-note">
             GPU timestamp queries, when exposed by the browser, are true device timestamps but may

@@ -13,8 +13,11 @@ and relights a photograph or live camera frame with a procedural flying fairy.
 
 - Official demo photograph, local photograph upload, and front/rear live camera sources.
 - Camera, relative-disparity, normals, and relit views.
-- An original procedural fairy with four fluttering wings and three coloured light lobes.
-- Projected wing-shaped occlusion and a tunable local reflective-glint approximation.
+- An original procedural fairy that follows wide swooping paths, rolls into turns, pitches through
+  depth changes, and changes scene-relative height rather than merely hovering in place.
+- One compact, softly pulsing firefly-style abdomen light; the wings are translucent surfaces, not
+  secondary light sources.
+- Soft projected wing-shaped occlusion and a tunable single-source reflective-glint approximation.
 - Browser, adapter, WebGPU, `shader-f16`, model, compilation, inference, FPS, dropped-frame, and
   timing-source diagnostics.
 - FP16 model selection when `shader-f16` is exposed, with a pinned FP32 fallback.
@@ -94,9 +97,12 @@ instead.
 1. Choose the public demo, a local photograph, or a camera.
 2. Start local processing and wait for the model hash and pipeline compilation to complete.
 3. Switch among Relit, Camera, Relative disparity, and Normals.
-4. Drag or tap the image to move the fairy.
-5. Adjust Shadow for the projected fluttering wing silhouettes and Reflections for coloured local
-   glints. A glasses response is an artistic screen-space approximation, not lens ray tracing.
+4. Leave the fairy unpinned for autonomous swoops, climbs, dives, and banked turns. Its analytic
+   plane foreshortens with projected roll and pitch instead of remaining a camera-facing cut-out.
+   Drag or tap the image to pin it; tap the fairy again to resume flight. Scroll or pinch to change
+   its depth.
+5. Adjust Shadow for the soft projected wing silhouettes and Reflections for the compact abdomen
+   glint. A glasses response is an artistic screen-space approximation, not lens ray tracing.
 
 For camera tests, record diagnostics only. Do not retain screenshots containing camera frames.
 
@@ -129,8 +135,37 @@ TYPEGPU_PREVIEW_URL='https://127.0.0.1:9443/?autorun=1&benchmark=1' \
 - **PENDING:** Pixel 8 Pro front/rear camera acceptance, MSI native file-picker acceptance, and human
   visual judgement of the glasses glint.
 
-No live camera image is committed. The two retained diagnostic records are documented in
+No live camera image is committed. The retained diagnostic records are documented in
 [`evidence/README.md`](evidence/README.md).
+
+## Firefly-flight qualification on 2026-08-27
+
+- **PASS:** hpubuntu Intel Gen9, FP16, true GPU timestamps, four non-black output readbacks, 58.81
+  FPS, and a 10.05 ms warmed median GPU render pass.
+- **PASS:** MSI Chrome 151 on Intel Xe-LPG, FP16, true GPU timestamps, four non-black output
+  readbacks, 60.01 FPS, and a 3.93 ms warmed median GPU render pass.
+- **PASS:** Time-separated MSI canvas captures showed wide movement, changed heading, and changed
+  scene lighting; manual pin and flight resume also passed. No camera permission or camera capture
+  was used for this check.
+- **BLOCKED AS EXPECTED:** The busy Quadro P5000 FP32 path again reached Vulkan out-of-memory. All
+  protected processes and ports 8080/8081 remained undisturbed.
+
+The redacted reproducible record is
+[`evidence/qualification-firefly-flight-20260827.json`](evidence/qualification-firefly-flight-20260827.json).
+
+## Roll-and-pitch qualification on 2026-08-27
+
+- **PASS:** hpubuntu Intel Gen9 used the pinned 13 MB FP16 model and true GPU timestamps. A
+  12-second static-demo sample traversed approximately −27° to +9° roll and −39° to +38° pitch;
+  four canvas captures were visually distinct and had different SHA-256 hashes.
+- **PASS:** MSI Chrome 151 on Intel Xe-LPG exposed `shader-f16` and true GPU timestamps. Three
+  time-separated static-demo captures showed different heading, roll, pitch, silhouette
+  foreshortening, and scene lighting without requesting camera permission.
+- The pose is an analytic perspective approximation, not a 3D mesh, skeletal simulation, semantic
+  scene reconstruction, or optical ray trace.
+
+The redacted reproducible record is
+[`evidence/qualification-fairy-rotation-20260827.json`](evidence/qualification-fairy-rotation-20260827.json).
 
 ## Licensing
 

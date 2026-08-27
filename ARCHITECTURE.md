@@ -33,7 +33,9 @@ flowchart LR
 - `index.ts` coordinates source changes, model selection, renderer lifetime, benchmarks, view
   switching, accessibility labels, and the exported qualification record.
 - `chooser.ts` and `camera-session.ts` isolate uploaded-image and front/rear-camera lifecycles.
-- `light-input.ts` converts pointer input into the scene-relative light position.
+- `light-input.ts` produces a deterministic, non-repeating harmonic flight path with wide swoops,
+  climbs, dives, tangent heading, turn-derived roll, and depth-velocity-derived pitch. Pointer input
+  can pin/reposition the fairy without changing the local-only processing boundary.
 
 ### Model acquisition and storage
 
@@ -65,11 +67,19 @@ a separately calibrated reconstruction system.
   render pipeline, canvas sizing, and optional GPU readback.
 - `shaders.ts` derives stable normals and ambient occlusion, ray-marches scene-relative shadows, and
   composites the selected diagnostic or relit view.
-- The original procedural fairy is generated analytically in the fragment shader. Four wing masks
-  flutter over time and drive a warm body light plus cyan and pink wing lobes.
-- A scene-relative caster plane projects the four wing masks into the central light. The Shadow
-  control scales the resulting silhouette.
-- A bright/neutral/detail cue and surface normal feed a three-lobe specular approximation. The
+- The original procedural fairy is generated analytically in the fragment shader. Its body and four
+  wing masks rotate into the path tangent, then pass through a bounded roll-and-pitch projection.
+  That projection foreshortens the wing span and body length, shears the silhouette during compound
+  turns, and gives local points a near/far depth offset. Flutter intermittently eases into an
+  open-wing glide. This is a lightweight pseudo-3D projection, not mesh geometry.
+- One yellow-green-biased, user-tinted lamp at the abdomen is the only scene light. It has a gentle
+  irregular pulse and a short motion-aligned glow trail. The body and wings remain visible surfaces
+  but no longer emit separate cyan/pink light lobes.
+- A scene-relative caster plane projects the four translucent wing masks into the abdomen light. A
+  second pose-depth estimate refines the plane for rolled and pitched wings. Their weighted maximum
+  opacity is deliberately limited before the Shadow control is applied, so they modulate rather
+  than dominate the scene shadow.
+- A bright/neutral/detail cue and surface normal feed a single-source specular approximation. The
   Reflections control scales it. It can suggest a moving glint on glasses but does not detect lenses
   or trace an optical reflection.
 
